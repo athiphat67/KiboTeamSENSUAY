@@ -33,8 +33,6 @@ Please download Android Studio 3.6.3 from the Android Studio download archives p
 and extract it to your home directory.
 
 
-
-
 ## Downloading additional components
 
 To build the Guest Science APK, you need to download additional components as
@@ -52,8 +50,9 @@ by side).
 ”
 
 5. Click the [Apply] button to install these components.
-
-
+❌‼️ When you open the APK template folder, the “Android Gradle Plugin Update
+Recommended” dialog may appear. However, you must not update the plugin because
+of a dependency problem, so select “Don’t remind me again for this project.
 
 # Page KIBO RPC
 - https://jaxa.krpc.jp/#subsection_entry_guidance_movie
