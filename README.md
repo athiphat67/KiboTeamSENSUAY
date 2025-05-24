@@ -35,6 +35,8 @@ and extract it to your home directory.
 
 ## Downloading additional components
 
+how to install : https://youtu.be/bN47LxLWkbU?si=WEseInGhowkqXjVY
+
 To build the Guest Science APK, you need to download additional components as
 follows.
 1. Launch Android Studio.
@@ -50,6 +52,7 @@ by side).
 ”
 
 5. Click the [Apply] button to install these components.
+
 ❌‼️ When you open the APK template folder, the “Android Gradle Plugin Update
 Recommended” dialog may appear. However, you must not update the plugin because
 of a dependency problem, so select “Don’t remind me again for this project.
