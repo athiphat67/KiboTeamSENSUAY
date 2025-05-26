@@ -27,6 +27,9 @@ Astrobee ต้องอ่านและรับรู้ภาพนี้ �
 ภารกิจทั้งหมดต้องเสร็จภายในเวลาประมาณ 5 นาที
 ยิ่งทำเสร็จเร็ว ยิ่งได้รับคะแนนโบนัสเพิ่ม
 
+# ประชุม 
+- https://docs.google.com/document/d/1-OMPzFw3zuAiyiITMOQ3VTgg7eV_gIuyEDOdRBQqGEs/edit?usp=sharing
+
 # Installing Android Studio
 Please download Android Studio 3.6.3 from the Android Studio download archives page
 ( https://developer.android.com/studio/archive) 
