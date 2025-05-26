@@ -27,6 +27,10 @@ Astrobee ต้องอ่านและรับรู้ภาพนี้ �
 ภารกิจทั้งหมดต้องเสร็จภายในเวลาประมาณ 5 นาที
 ยิ่งทำเสร็จเร็ว ยิ่งได้รับคะแนนโบนัสเพิ่ม
 
+# Must watch the video this first ‼️
+- https://youtu.be/qqDAFPjcqyM?si=1m3u4_MxLZFCDX0A
+- https://youtu.be/QDY3MdurQzw?si=MMCPV5pUYGmOf9ok
+
 # ประชุม 
 - https://docs.google.com/document/d/1-OMPzFw3zuAiyiITMOQ3VTgg7eV_gIuyEDOdRBQqGEs/edit?usp=sharing
 
@@ -60,14 +64,8 @@ by side).
 Recommended” dialog may appear. However, you must not update the plugin because
 of a dependency problem, so select “Don’t remind me again for this project.
 
-# Page KIBO RPC
-- https://jaxa.krpc.jp/#subsection_entry_guidance_movie
-  
 # Entry and Progamming guide 
 - https://jaxa.krpc.jp/download
-
-# Programming tool guide
-- https://humans-in-space.jaxa.jp/krpc/1st/download/files/Kibo-RPC_PGManual.pdf
 
 # Simulation Test 
 - link: https://jaxa.krpc.jp/user-auth/index.html
