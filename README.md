@@ -39,31 +39,6 @@ Please download Android Studio 3.6.3 from the Android Studio download archives p
 ( https://developer.android.com/studio/archive) 
 and extract it to your home directory.
 
-
-## Downloading additional components
-
-how to install : https://youtu.be/bN47LxLWkbU?si=WEseInGhowkqXjVY
-
-To build the Guest Science APK, you need to download additional components as
-follows.
-1. Launch Android Studio.
-2. Select [Tools] -> [SDK Manager].
-On the SDK Platforms tab, check “Show Package Details” and select “Android SDK
-Platform 25”
-, “Android SDK Platform 26”, and “Android SDK Platform 28”
-.
-
-3. On the SDK Tools Tab, check “Show Package Details” and select “25.0.3”, “26.0.2”,
-“28.0.3” under Android SDK Build-Tools and select “20.0.5594570” under NDK (Side
-by side).
-”
-
-5. Click the [Apply] button to install these components.
-
-❌‼️ When you open the APK template folder, the “Android Gradle Plugin Update
-Recommended” dialog may appear. However, you must not update the plugin because
-of a dependency problem, so select “Don’t remind me again for this project.
-
 # Entry and Progamming guide 
 - https://jaxa.krpc.jp/download
 
