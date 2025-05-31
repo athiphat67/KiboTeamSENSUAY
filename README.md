@@ -27,6 +27,10 @@ Astrobee ต้องอ่านและรับรู้ภาพนี้ �
 ภารกิจทั้งหมดต้องเสร็จภายในเวลาประมาณ 5 นาที
 ยิ่งทำเสร็จเร็ว ยิ่งได้รับคะแนนโบนัสเพิ่ม
 
+# Must watch the video first ‼️
+- vector 3d : https://youtu.be/qqDAFPjcqyM?si=1m3u4_MxLZFCDX0A
+- image processing : https://youtu.be/QDY3MdurQzw?si=MMCPV5pUYGmOf9ok
+
 # ประชุม 
 - https://docs.google.com/document/d/1-OMPzFw3zuAiyiITMOQ3VTgg7eV_gIuyEDOdRBQqGEs/edit?usp=sharing
 
@@ -35,39 +39,8 @@ Please download Android Studio 3.6.3 from the Android Studio download archives p
 ( https://developer.android.com/studio/archive) 
 and extract it to your home directory.
 
-
-## Downloading additional components
-
-how to install : https://youtu.be/bN47LxLWkbU?si=WEseInGhowkqXjVY
-
-To build the Guest Science APK, you need to download additional components as
-follows.
-1. Launch Android Studio.
-2. Select [Tools] -> [SDK Manager].
-On the SDK Platforms tab, check “Show Package Details” and select “Android SDK
-Platform 25”
-, “Android SDK Platform 26”, and “Android SDK Platform 28”
-.
-
-3. On the SDK Tools Tab, check “Show Package Details” and select “25.0.3”, “26.0.2”,
-“28.0.3” under Android SDK Build-Tools and select “20.0.5594570” under NDK (Side
-by side).
-”
-
-5. Click the [Apply] button to install these components.
-
-❌‼️ When you open the APK template folder, the “Android Gradle Plugin Update
-Recommended” dialog may appear. However, you must not update the plugin because
-of a dependency problem, so select “Don’t remind me again for this project.
-
-# Page KIBO RPC
-- https://jaxa.krpc.jp/#subsection_entry_guidance_movie
-  
 # Entry and Progamming guide 
 - https://jaxa.krpc.jp/download
-
-# Programming tool guide
-- https://humans-in-space.jaxa.jp/krpc/1st/download/files/Kibo-RPC_PGManual.pdf
 
 # Simulation Test 
 - link: https://jaxa.krpc.jp/user-auth/index.html
