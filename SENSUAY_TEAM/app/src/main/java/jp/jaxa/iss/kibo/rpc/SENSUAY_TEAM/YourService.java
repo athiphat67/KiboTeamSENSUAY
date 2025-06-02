@@ -1,11 +1,8 @@
 package jp.jaxa.iss.kibo.rpc.SENSUAY_TEAM;
 
 import jp.jaxa.iss.kibo.rpc.api.KiboRpcService;
-
 import gov.nasa.arc.astrobee.types.Point;
 import gov.nasa.arc.astrobee.types.Quaternion;
-
-import org.opencv.core.Mat;
 
 /**
  * Class meant to handle commands from the Ground Data System and execute them in Astrobee.
@@ -13,63 +10,64 @@ import org.opencv.core.Mat;
 
 public class YourService extends KiboRpcService {
     @Override
-    protected void runPlan1(){
-        // The mission starts.
+    protected void runPlan1() {
+
+        // StartMissions
         api.startMission();
 
-        // Move to a point.
-        Point point = new Point(10.9d, -9.92284d, 5.195d);
-        Quaternion quaternion = new Quaternion(0f, 0f, -0.707f, 0.707f);
-        api.moveTo(point, quaternion, false);
+        // Move to Area1
+        moveToArea1();
 
-        // Get a camera image.
-        Mat image = api.getMatNavCam();
+        // Move to Area2
+        moveToArea2();
 
-        /* ******************************************************************************** */
-        /* Write your code to recognize the type and number of landmark items in each area! */
-        /* If there is a treasure item, remember it.                                        */
-        /* ******************************************************************************** */
+        // Move to Area3
+        moveToArea3();
 
-        // When you recognize landmark items, let’s set the type and number.
-        api.setAreaInfo(1, "item_name", 1);
+        // Move to Area4
+        moveToArea4();
 
-        /* **************************************************** */
-        /* Let's move to each area and recognize the items. */
-        /* **************************************************** */
+        // Move to Astronaut
+        moveToAstronaut();
 
-        // When you move to the front of the astronaut, report the rounding completion.
-        point = new Point(11.143d, -6.7607d, 4.9654d);
-        quaternion = new Quaternion(0f, 0f, 0.707f, 0.707f);
-        api.moveTo(point, quaternion, false);
+        // Shutdown
+        api.shutdownFactory();
+
+    }
+
+    public void moveToArea1() {
+        Point point = new Point(10.95, -9.88, 5.195);
+        Quaternion quaternion = new Quaternion(0f, 0f, 0.707f, 0.707f);
+        api.moveTo(point, quaternion, true);
+    }
+
+    public void moveToArea2() {
+        Point point = new Point(10.925, -8.525, 4.76203);
+        Quaternion quaternion = new Quaternion(0f, 0.707f, 0f, 0.707f);
+        api.moveTo(point, quaternion, true);
+    }
+
+    public void moveToArea3() {
+        Point point = new Point(10.925, -7.825, 4.76093);
+        Quaternion quaternion = new Quaternion(0f, 0.707f, 0f, 0.707f);
+        api.moveTo(point, quaternion, true);
+    }
+
+    public void moveToArea4() {
+        Point point = new Point(11.143d, -6.7607d, 4.9654d);
+        Quaternion quaternion = new Quaternion(0f, 0f, 0f, 1f);
+        api.moveTo(point, quaternion, true);
+    }
+
+    public void moveToAstronaut() {
+        Point point = new Point(11.143d, -6.7607d, 4.9654d);
+        Quaternion quaternion = new Quaternion(0f, 0f, 0.707f, 0.707f);
+        api.moveTo(point, quaternion, true);
         api.reportRoundingCompletion();
-
-        /* ********************************************************** */
-        /* Write your code to recognize which target item the astronaut has. */
-        /* ********************************************************** */
-
-        // Let's notify the astronaut when you recognize it.
-        api.notifyRecognitionItem();
-
-        /* ******************************************************************************************************* */
-        /* Write your code to move Astrobee to the location of the target item (what the astronaut is looking for) */
-        /* ******************************************************************************************************* */
-
-        // Take a snapshot of the target item.
-        api.takeTargetItemSnapshot();
     }
 
-    @Override
-    protected void runPlan2(){
-       // write your plan 2 here.
+    public void FindPaper() {
+
     }
 
-    @Override
-    protected void runPlan3(){
-        // write your plan 3 here.
-    }
-
-    // You can add your method.
-    private String yourMethod(){
-        return "your method";
-    }
 }
