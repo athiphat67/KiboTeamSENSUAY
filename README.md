@@ -30,8 +30,9 @@ Astrobee ต้องอ่านและรับรู้ภาพนี้ �
 # Must watch the video first ‼️
 - vector 3d : https://youtu.be/qqDAFPjcqyM?si=1m3u4_MxLZFCDX0A
 - image processing : https://youtu.be/QDY3MdurQzw?si=MMCPV5pUYGmOf9ok
+- 
 
-# ประชุม 
+# เอกสารข้อมูลสำหรับพัฒนา
 - https://docs.google.com/document/d/1-OMPzFw3zuAiyiITMOQ3VTgg7eV_gIuyEDOdRBQqGEs/edit?usp=sharing
 
 # Installing Android Studio
