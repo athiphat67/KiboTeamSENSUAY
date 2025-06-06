@@ -29,9 +29,6 @@ import java.util.List;
  */
 
 public class YourService extends KiboRpcService {
-
-    ArrayList<DataPaper> ListDataPaper = new ArrayList<>();
-
     @Override
     protected void runPlan1() {
 
@@ -40,29 +37,18 @@ public class YourService extends KiboRpcService {
 
         // moveToArea 1 2 3 4 for capture image
         moveToArea1();
-        // moveToArea2();
-        // moveToArea3();
-        moveBtwArea23();
+
+        moveInO2();
+//        moveTo95cm();
+//        moveTo105cm();
+        moveTo115cm();
+        moveOutO3();
+
         moveToArea4();
 
         // Move to Astronaut
         moveToAstronaut();
         api.reportRoundingCompletion();
-
-        for (DataPaper obj : ListDataPaper) {
-            // ในนี้ obj จะอ้างอิงถึงแต่ละ DataPaper ทีละตัว
-            // เรียกใช้เมธอดหรือฟิลด์ใน DataPaper ตามต้องการ เช่น
-            int paperNumber = obj.getPaperNumber();
-            int arucoId     = obj.getArucoId();
-            double[] rvec   = obj.getRvec();
-            double[] tvec   = obj.getTvec();
-
-            Log.i("List",
-                    "Paper = " + paperNumber
-                            + ", ArucoID = " + arucoId
-                            + ", rvec = [" + rvec[0] + ", " + rvec[1] + ", " + rvec[2] + "]"
-                            + ", tvec = [" + tvec[0] + ", " + tvec[1] + ", " + tvec[2] + "]");
-        }
 
         // Shutdown
         api.shutdownFactory();
@@ -76,66 +62,76 @@ public class YourService extends KiboRpcService {
         api.moveTo(p1, q1, false);
 
         // point 2: oasis 2 → area 1
-        Point p2 = new Point(11.175, -10.03, 5.245);
+        Point p1_2 = new Point(11.175, -10.03, 5.245);
         Quaternion q2 = eulerToQuaternion(0, 0, -90);
-        api.moveTo(p2, q2, true);
+        api.moveTo(p1_2, q2, true);
 
         captureAndSaveImage("area1_cap.png");
-        ListDataPaper.add(CapturePaper(1));
     }
 
-//    private void moveToArea2() {
-//        // point 3: oasis 2 → area 2
-//        Point p3 = new Point(11.175, -8.975, 5.115);
-//        Quaternion q3 = eulerToQuaternion(90, 0, 0); // หันกล้องลง
-//        api.moveTo(p3, q3, true);
+    // move in to oasis 2
+    private void moveInO2() {
+        Point p23in = new Point(11.150, -8.55, 5.115);
+        Quaternion q23 = eulerToQuaternion(90, 0, 0);
+        api.moveTo(p23in, q23, true);
+    }
+
+//    private void moveTo95cm() {
+//        Point p80 = new Point(11.150, -8.45, 4.712); // ห่างจากระนาบ 95 cm
+//        Quaternion q23 = eulerToQuaternion(90,0,0);
+//        api.moveTo(p80, q23, true);
 //
-//        captureAndSaveImage("area2_cap.png");
+//        SystemClock.sleep(5000);
+//
+//        captureAndSaveImage("btw23_cap_80cm.png");
 //    }
 //
-//    private void moveToArea3() {
-//        // point 4: oasis 3 → area 3
-//        Point p4 = new Point(10.7, -7.925, 5.115);
-//        Quaternion q4 = eulerToQuaternion(90, 0, 0); // หันกล้องลง
-//        api.moveTo(p4, q4, true);
+//    private void moveTo105cm() {
+//        Point p85 = new Point(11.150, -8.45, 4.812); // ห่างจากระนาบ 105 cm
+//        Quaternion q23 = eulerToQuaternion(90, 0, 0);
+//        api.moveTo(p85, q23, true);
 //
-//        captureAndSaveImage("area3_cap.png");
+//        SystemClock.sleep(5000);
+//
+//        captureAndSaveImage("btw23_cap_85cm.png");
 //    }
 
-    private void moveBtwArea23() {
-        // point 23: oasis 2 --> area 2, area 3
-        Point p23 = new Point(11.150, -8.45, 5.115);
+    private void moveTo115cm() {
+        Point p115 = new Point(11.150, -8.45, 4.912); // ห่างจากระนาบ 115 cm
         Quaternion q23 = eulerToQuaternion(90, 0, 0);
-        api.moveTo(p23, q23, true);
+        api.moveTo(p115, q23, true);
 
         SystemClock.sleep(5000);
 
-        captureAndSaveImage("btw23_cap.png");
-        ListDataPaper.add(CapturePaper(23));
+        captureAndSaveImage("btw23_cap_115cm.png");
+    }
 
+    private void moveOutO3() {
+        Point p23out = new Point(11.150, -8.35, 5.115);
+        Quaternion q4 = eulerToQuaternion(-15, 0, 180); // หันออกจอ 15 deg
+        api.moveTo(p23out, q4, true);
     }
 
     private void moveToArea4() {
         // point 5: oasis 4 → area 4
-        Point p5 = new Point(11.1, -6.875, 4.8);
-        Quaternion q5 = eulerToQuaternion(0, 0, 180); // หันหน้าไปด้านหน้า
-        api.moveTo(p5, q5, true);
+        Point p4 = new Point(11.1, -6.875, 4.8);
+        Quaternion q4 = eulerToQuaternion(-10, 0, 180); // หันออกจอ 15 deg
+        api.moveTo(p4, q4, true);
 
         SystemClock.sleep(2000);
 
         captureAndSaveImage("area4_cap.png");
-        ListDataPaper.add(CapturePaper(4));
     }
 
     private void moveToAstronaut() {
         Point astroPoint = new Point(11.143d, -6.7607d, 4.9654d);
         Quaternion astroQ = new Quaternion(0f, 0f, 0.707f, 0.707f); // หันไปทางขวา (y+)
         api.moveTo(astroPoint, astroQ, false);
-
         api.reportRoundingCompletion();
+
         SystemClock.sleep(3000);
+
         captureAndSaveImage("target_cap.png");
-        ListDataPaper.add(CapturePaper(5));
     }
 
     private Quaternion eulerToQuaternion(double pitchDeg, double rollDeg, double yawDeg) {
@@ -164,7 +160,7 @@ public class YourService extends KiboRpcService {
         api.saveMatImage(img, filename); // save image
     }
 
-    private DataPaper CapturePaper(int paper) {
+    private void CapturePaper(int paper) {
 
         int stop = String.valueOf(paper).length(); // ถ้า paper=7 → stop=1, ถ้า paper=23 → stop=2
         int start = 0;
@@ -399,6 +395,5 @@ public class YourService extends KiboRpcService {
 
 
         }
-        return obj;
     }
 }
