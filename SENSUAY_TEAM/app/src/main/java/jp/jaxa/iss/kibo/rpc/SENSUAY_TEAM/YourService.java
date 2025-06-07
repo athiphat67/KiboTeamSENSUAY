@@ -72,7 +72,6 @@ public class YourService extends KiboRpcService {
         Mat img = CapturePaper(1);
         api.saveMatImage(img, "Area1.png");
 
-        captureAndSaveImage("area1_cap.png");
 
     }
 
@@ -119,7 +118,6 @@ public class YourService extends KiboRpcService {
         Mat img2 = CapturePaper(3);
         api.saveMatImage(img2, "Area3.png");
 
-        captureAndSaveImage("btw23_cap_115cm.png");
     }
 
     private void moveOutO3() {
@@ -142,10 +140,6 @@ public class YourService extends KiboRpcService {
         api.saveMatImage(img, "Area4.png");
 
 
-        SystemClock.sleep(2000);
-
-        captureAndSaveImage("area4_cap.png");
-
     }
 
     private void moveToAstronaut() {
@@ -160,10 +154,7 @@ public class YourService extends KiboRpcService {
         api.saveMatImage(img, "TargetItems.png");
 
         api.reportRoundingCompletion();
-
-        SystemClock.sleep(3000);
-
-        captureAndSaveImage("target_cap.png");
+        
     }
 
     private Quaternion eulerToQuaternion(double pitchDeg, double rollDeg, double yawDeg) {
