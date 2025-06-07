@@ -27,18 +27,8 @@ Astrobee ต้องอ่านและรับรู้ภาพนี้ �
 ภารกิจทั้งหมดต้องเสร็จภายในเวลาประมาณ 5 นาที
 ยิ่งทำเสร็จเร็ว ยิ่งได้รับคะแนนโบนัสเพิ่ม
 
-# Must watch the video first ‼️
-- vector 3d : https://youtu.be/qqDAFPjcqyM?si=1m3u4_MxLZFCDX0A
-- image processing : https://youtu.be/QDY3MdurQzw?si=MMCPV5pUYGmOf9ok
-- 
-
 # เอกสารข้อมูลสำหรับพัฒนา
 - https://docs.google.com/document/d/1-OMPzFw3zuAiyiITMOQ3VTgg7eV_gIuyEDOdRBQqGEs/edit?usp=sharing
-
-# Installing Android Studio
-Please download Android Studio 3.6.3 from the Android Studio download archives page
-( https://developer.android.com/studio/archive) 
-and extract it to your home directory.
 
 # Entry and Progamming guide 
 - https://jaxa.krpc.jp/download
