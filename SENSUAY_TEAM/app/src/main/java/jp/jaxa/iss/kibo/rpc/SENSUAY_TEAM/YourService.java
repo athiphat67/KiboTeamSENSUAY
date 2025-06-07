@@ -31,9 +31,6 @@ import org.tensorflow.lite.*;
  */
 
 public class YourService extends KiboRpcService {
-<<<<<<< HEAD
-=======
->>>>>>> 7f04d5f28037776c9703be7c1e8ed17cdc7e5bdb
     @Override
     protected void runPlan1() {
         // StartMissions
@@ -42,16 +39,13 @@ public class YourService extends KiboRpcService {
         moveToArea1();
 
         moveInO2();
-<<<<<<< HEAD
         // moveTo95cm();
         // moveTo105cm();
         moveTo115cm();
-=======
 //        moveTo95cm();
 //        moveTo105cm();
         moveTo115cm();
         moveOutO3();
->>>>>>> 7f04d5f28037776c9703be7c1e8ed17cdc7e5bdb
 
         moveToArea4();
 
@@ -75,12 +69,11 @@ public class YourService extends KiboRpcService {
         Quaternion q2 = eulerToQuaternion(0, 0, -90);
         api.moveTo(p1_2, q2, true);
 
-<<<<<<< HEAD
         Mat img = CapturePaper(1);
         api.saveMatImage(img, "Area1.png");
-=======
+
         captureAndSaveImage("area1_cap.png");
->>>>>>> 7f04d5f28037776c9703be7c1e8ed17cdc7e5bdb
+
     }
 
     // move in to oasis 2
@@ -104,15 +97,12 @@ public class YourService extends KiboRpcService {
 //        Point p85 = new Point(11.150, -8.45, 4.812); // ห่างจากระนาบ 105 cm
 //        Quaternion q23 = eulerToQuaternion(90, 0, 0);
 //        api.moveTo(p85, q23, true);
-<<<<<<< HEAD
 //ๆ
 //        SystemClock.sleep(5000);
 //
-=======
 //
 //        SystemClock.sleep(5000);
 //
->>>>>>> 7f04d5f28037776c9703be7c1e8ed17cdc7e5bdb
 //        captureAndSaveImage("btw23_cap_85cm.png");
 //    }
 
@@ -123,12 +113,12 @@ public class YourService extends KiboRpcService {
 
         SystemClock.sleep(5000);
 
-<<<<<<< HEAD
+
         Mat img1 = CapturePaper(2);
         api.saveMatImage(img1, "Area2.png");
         Mat img2 = CapturePaper(3);
         api.saveMatImage(img2, "Area3.png");
-=======
+
         captureAndSaveImage("btw23_cap_115cm.png");
     }
 
@@ -136,7 +126,6 @@ public class YourService extends KiboRpcService {
         Point p23out = new Point(11.150, -8.35, 5.115);
         Quaternion q4 = eulerToQuaternion(-15, 0, 180); // หันออกจอ 15 deg
         api.moveTo(p23out, q4, true);
->>>>>>> 7f04d5f28037776c9703be7c1e8ed17cdc7e5bdb
     }
 
 
@@ -145,27 +134,24 @@ public class YourService extends KiboRpcService {
         Point p4 = new Point(11.1, -6.875, 4.8);
         Quaternion q4 = eulerToQuaternion(-10, 0, 180); // หันออกจอ 15 deg
         api.moveTo(p4, q4, true);
-<<<<<<< HEAD
-        Log.i("TAG","Success move point4");
+
 
         SystemClock.sleep(2000);
 
         Mat img = CapturePaper(4);
         api.saveMatImage(img, "Area4.png");
-=======
+
 
         SystemClock.sleep(2000);
 
         captureAndSaveImage("area4_cap.png");
->>>>>>> 7f04d5f28037776c9703be7c1e8ed17cdc7e5bdb
+
     }
 
     private void moveToAstronaut() {
         Point astroPoint = new Point(11.143d, -6.7607d, 4.9654d);
         Quaternion astroQ = new Quaternion(0f, 0f, 0.707f, 0.707f); // หันไปทางขวา (y+)
         api.moveTo(astroPoint, astroQ, false);
-<<<<<<< HEAD
-        Log.i("TAG","Success move point5");
         api.reportRoundingCompletion();
 
         SystemClock.sleep(1500);
@@ -173,13 +159,11 @@ public class YourService extends KiboRpcService {
         Mat img = CapturePaper(5);
         api.saveMatImage(img, "TargetItems.png");
 
-=======
         api.reportRoundingCompletion();
 
         SystemClock.sleep(3000);
 
         captureAndSaveImage("target_cap.png");
->>>>>>> 7f04d5f28037776c9703be7c1e8ed17cdc7e5bdb
     }
 
     private Quaternion eulerToQuaternion(double pitchDeg, double rollDeg, double yawDeg) {
@@ -208,12 +192,7 @@ public class YourService extends KiboRpcService {
         api.saveMatImage(img, filename); // save image
     }
 
-<<<<<<< HEAD
-
     private Mat CapturePaper(int paper) {
-=======
-    private void CapturePaper(int paper) {
->>>>>>> 7f04d5f28037776c9703be7c1e8ed17cdc7e5bdb
 
         int stop = String.valueOf(paper).length(); // ถ้า paper=7 → stop=1, ถ้า paper=23 → stop=2
         int start = 0;
@@ -454,14 +433,11 @@ public class YourService extends KiboRpcService {
             Core.flip(warped, warpedFlipped, 1);
 
         }
-<<<<<<< HEAD
+
         return warpedFlipped;
-=======
->>>>>>> 7f04d5f28037776c9703be7c1e8ed17cdc7e5bdb
     }
 
     private void testTensorFlowList() {
 
     }
-
 }
