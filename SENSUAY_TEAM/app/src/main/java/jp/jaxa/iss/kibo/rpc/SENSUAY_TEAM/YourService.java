@@ -39,7 +39,6 @@ public class YourService extends KiboRpcService {
         moveToArea1();
 
         moveInO2();
-        // moveTo95cm();
         // moveTo105cm();
         moveTo115cm();
 //        moveTo95cm();
