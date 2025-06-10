@@ -18,46 +18,70 @@ import org.opencv.core.Rect;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.RectF;
 import android.os.SystemClock;
 import android.util.Log;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.tensorflow.lite.*;
+import org.tensorflow.lite.support.image.TensorImage;
+import org.tensorflow.lite.support.label.Category;
+import org.tensorflow.lite.task.vision.detector.Detection;
+import org.tensorflow.lite.task.vision.detector.ObjectDetector;
 
 /**
  * Class meant to handle commands from the Ground Data System and execute them in Astrobee.
  */
 
 public class YourService extends KiboRpcService {
+
+    ArrayList<DataPaper> data = new ArrayList<>();
+    private ObjectDetector mainDetector;
+    private boolean areModelsReady = false;
+
     @Override
     protected void runPlan1() {
         // StartMissions
         api.startMission();
-        // moveToArea 1 2 3 4 for capture image
-        moveToArea1();
 
-        moveInO2();
-        // moveTo105cm();
-        moveTo115cm();
-//        moveTo95cm();
-//        moveTo105cm();
-        moveTo115cm();
-        moveOutO3();
+        try {
+            moveToArea1();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
-        moveToArea4();
-
-        // Move to Astronaut
-        moveToAstronaut();
-        api.reportRoundingCompletion();
+//        try {
+//            moveTo115cm();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//
+//        try {
+//            moveToArea4();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//
+//        try {
+//            moveToAstronaut();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//        api.reportRoundingCompletion();
 
         // Shutdown
         api.shutdownFactory();
 
     }
 
-    private void moveToArea1() {
+    private void moveToArea1() throws IOException {
         // point 1: oasis 1 → area 1
         Point p1 = new Point(10.9d, -9.92284d, 5.195d);
         Quaternion q1 = eulerToQuaternion(0, 0, -90);
@@ -68,9 +92,13 @@ public class YourService extends KiboRpcService {
         Quaternion q2 = eulerToQuaternion(0, 0, -90);
         api.moveTo(p1_2, q2, true);
 
-        Mat img = CapturePaper(1);
-        api.saveMatImage(img, "Area1.png");
 
+
+        DataPaper result1 = CapturePaper(1);
+        Mat imgResult = result1.getCaptureImage();
+        api.saveMatImage(imgResult, "imgArea_"+ 1 +".png");
+
+        //Prediction(1);
 
     }
 
@@ -79,81 +107,65 @@ public class YourService extends KiboRpcService {
         Point p23in = new Point(11.150, -8.55, 5.115);
         Quaternion q23 = eulerToQuaternion(90, 0, 0);
         api.moveTo(p23in, q23, true);
+
     }
 
-//    private void moveTo95cm() {
-//        Point p80 = new Point(11.150, -8.45, 4.712); // ห่างจากระนาบ 95 cm
-//        Quaternion q23 = eulerToQuaternion(90,0,0);
-//        api.moveTo(p80, q23, true);
-//
-//        SystemClock.sleep(5000);
-//
-//        captureAndSaveImage("btw23_cap_80cm.png");
-//    }
-//
-//    private void moveTo105cm() {
-//        Point p85 = new Point(11.150, -8.45, 4.812); // ห่างจากระนาบ 105 cm
-//        Quaternion q23 = eulerToQuaternion(90, 0, 0);
-//        api.moveTo(p85, q23, true);
-//ๆ
-//        SystemClock.sleep(5000);
-//
-//
-//        SystemClock.sleep(5000);
-//
-//        captureAndSaveImage("btw23_cap_85cm.png");
-//    }
 
-    private void moveTo115cm() {
+    private void moveTo115cm() throws IOException {
         Point p115 = new Point(11.150, -8.45, 4.912); // ห่างจากระนาบ 115 cm
         Quaternion q23 = eulerToQuaternion(90, 0, 0);
         api.moveTo(p115, q23, true);
 
         SystemClock.sleep(5000);
 
+        DataPaper result2 = CapturePaper(2);
+        Mat imgResult2 = result2.getCaptureImage();
+        api.saveMatImage(imgResult2, "imgArea_"+ 2 +".png");
 
-        Mat img1 = CapturePaper(2);
-        api.saveMatImage(img1, "Area2.png");
-        Mat img2 = CapturePaper(3);
-        api.saveMatImage(img2, "Area3.png");
+        Prediction(2);
 
+        DataPaper result3 = CapturePaper(3);
+        Mat imgResult3 = result3.getCaptureImage();
+        api.saveMatImage(imgResult3, "imgArea_"+ 3 +".png");
+
+        Prediction(3);
     }
 
     private void moveOutO3() {
         Point p23out = new Point(11.150, -8.35, 5.115);
         Quaternion q4 = eulerToQuaternion(-15, 0, 180); // หันออกจอ 15 deg
-        api.moveTo(p23out, q4, true);
+        //api.moveTo(p23out, q4, true);
     }
 
 
-    private void moveToArea4() {
+    private void moveToArea4() throws IOException {
         // point 5: oasis 4 → area 4
         Point p4 = new Point(11.1, -6.875, 4.8);
         Quaternion q4 = eulerToQuaternion(-10, 0, 180); // หันออกจอ 15 deg
         api.moveTo(p4, q4, true);
 
-
         SystemClock.sleep(2000);
 
-        Mat img = CapturePaper(4);
-        api.saveMatImage(img, "Area4.png");
+        DataPaper result4 = CapturePaper(4);
+        Mat imgResult4 = result4.getCaptureImage();
+        api.saveMatImage(imgResult4, "imgArea_"+ 4 +".png");
 
+        Prediction(4);
 
     }
 
-    private void moveToAstronaut() {
+    private void moveToAstronaut() throws IOException {
         Point astroPoint = new Point(11.143d, -6.7607d, 4.9654d);
         Quaternion astroQ = new Quaternion(0f, 0f, 0.707f, 0.707f); // หันไปทางขวา (y+)
         api.moveTo(astroPoint, astroQ, false);
         api.reportRoundingCompletion();
+        SystemClock.sleep(1000);
 
-        SystemClock.sleep(1500);
+        DataPaper result5 = CapturePaper(5);
+        Mat imgResult5 = result5.getCaptureImage();
+        api.saveMatImage(imgResult5, "imgArea_"+ 5 +".png");
 
-        Mat img = CapturePaper(5);
-        api.saveMatImage(img, "TargetItems.png");
-
-        api.reportRoundingCompletion();
-        
+        Prediction(5);
     }
 
     private Quaternion eulerToQuaternion(double pitchDeg, double rollDeg, double yawDeg) {
@@ -176,25 +188,23 @@ public class YourService extends KiboRpcService {
         return new Quaternion((float) x, (float) y, (float) z, (float) w);
     }
 
-    // capture and save image
-    private void captureAndSaveImage(String filename) {
-        Mat img = api.getMatNavCam(); // capture
-        api.saveMatImage(img, filename); // save image
-    }
-
-    private Mat CapturePaper(int paper) {
+    private DataPaper CapturePaper(int paper) {
 
         int stop = String.valueOf(paper).length(); // ถ้า paper=7 → stop=1, ถ้า paper=23 → stop=2
         int start = 0;
         int Inputpaper = paper;
         int Check_paper = paper;
-        DataPaper obj = new DataPaper();
         Mat warpedFlipped = new Mat();
+        int arucoid = -1;
+        double[] rvec_array = new double[3];
+        double[] tvec_array = new double[3];
+
 
         // ---------------------------- start setup field ----------------------------
         while (start < stop) {
 
             float ARUCO_LEN = 0.05f;
+            start++;
 
             // เตรียมค่าสำหรับ sharpen kernel
             float[] data = {0, -1, 0, -1, 5, -1, 0, -1, 0};
@@ -210,28 +220,19 @@ public class YourService extends KiboRpcService {
             cameraMatrix.put(0, 0, cameraParam[0]);
             dstMatrix.put(0, 0, cameraParam[1]);
 
-            // --------------------------------- แยกภาพ ที่ area 2 and area 3 ----------------------------------//
-
-            if (Check_paper == 23) {
-                if (start == 0) {
-                    paper = Inputpaper / 10;   // ครั้งแรกจะได้หลักหน้า (2)
-                } else {
-                    paper = Inputpaper % 10;   // ครั้งที่สองจะได้หลักหลัง (3)
-                }
-            }
-            start++;
-
-            // เลือกกล้อง (DockCam ถ้า paper==5, ไม่งั้น NavCam)
             Mat Cam = api.getMatNavCam();
+            api.saveMatImage(Cam, paper+"CamCheck.png");
 
             Mat imgUndistort = new Mat();
             Calib3d.undistort(Cam, imgUndistort, cameraMatrix, dstMatrix);
+            api.saveMatImage(Cam, paper + "Undistrort.png");
 
             // คราวนี้แบ่งกรอบภาพซ้าย/ขวา ตามค่า paper
             int wCam = imgUndistort.cols();
             int hCam = imgUndistort.rows();
             int halfWidth = wCam / 2;
 
+            // --------------------------------- แยกภาพ ที่ area 2 and area 3 ----------------------------------//
             Mat imgCrop;
             if (paper == 2) {
                 // ซ้าย
@@ -256,6 +257,10 @@ public class YourService extends KiboRpcService {
             // ---------------------------- Detect Markers ----------------------------
             Aruco.detectMarkers(imgSharpned, Dict, corners, ids);
 
+            if (corners.isEmpty()) {return new DataPaper(imgCrop, false, Inputpaper, -1); }
+
+            arucoid = (int) ids.get(0,0)[0];
+
             // ---------------------------- Rotation Paper ----------------------------
             //    TL --------------------------- TR
             //    |                               |
@@ -277,6 +282,8 @@ public class YourService extends KiboRpcService {
             Mat rvecs = new Mat();
             Mat tvecs = new Mat();
             Aruco.estimatePoseSingleMarkers(CornersList, ARUCO_LEN, cameraMatrix, dstMatrix, rvecs, tvecs);
+            rvecs.get(0,0, rvec_array);
+            tvecs.get(0,0,tvec_array);
 
             // สร้าง MatOfPoint2f เพื่อแปลง selectedCorner → Point[]
             MatOfPoint2f cornerPoints = new MatOfPoint2f(selectedCorner);
@@ -326,8 +333,7 @@ public class YourService extends KiboRpcService {
 
             // ---------------------------- นำ kernel มา sharpen ผลลัพธ์อีกครั้ง ----------------------------
             Imgproc.filter2D(imgRotation, imgRotation, -1, kernel);
-
-            // ---------------------------- พลิกภาพ (flip code = -1) ----------------------------
+            api.saveMatImage(imgRotation, "imgBackup_" + Inputpaper + ".png");
 
             // ------------- imgGray--------------------
             Mat imgGray = new Mat();
@@ -419,15 +425,164 @@ public class YourService extends KiboRpcService {
             // 12. Warp Perspective และ flip ---------------------------------------
             Mat warped = new Mat();
             Imgproc.warpPerspective(imgGray, warped, H, new Size(540,300));
-            warpedFlipped = new Mat();
+            warpedFlipped = warped;
             Core.flip(warped, warpedFlipped, 1);
 
         }
 
-        return warpedFlipped;
+        return new DataPaper(warpedFlipped, true, Inputpaper, arucoid, rvec_array, tvec_array);
     }
 
-    private void testTensorFlowList() {
+    private void Prediction(int area) throws IOException {
+        // Log เพื่อบอกจุดเริ่มต้นของกระบวนการสำหรับ Area ที่ระบุ
+        Log.i("PredictionFlow", "===== Starting Prediction for Area: " + area + " =====");
+
+        String pathFile = getImagePath(area);
+        File ImgFile = new File(pathFile);
+        File modelFile = getModelFile();
+
+        // ตรวจสอบว่า getModelFile ทำงานสำเร็จและได้ไฟล์โมเดลมาจริงหรือไม่
+        if (modelFile == null) {
+            Log.e("PredictionFlow", "Model file is NULL. Cannot create detector. Aborting prediction.");
+            return;
+        }
+
+        Bitmap bitmap;
+
+        List<FinalAreaResult> allResultsInArea = new ArrayList<>();
+        List<Detection> results;
+        float threshold = 0.5f;
+        ObjectDetector.ObjectDetectorOptions options = modelSetting(threshold);
+        Log.i("PredictionFlow", "Success Create options");
+        ObjectDetector detector = ObjectDetector.createFromFileAndOptions(modelFile, options);
+
+        // Log เพื่อยืนยันว่าสร้าง Detector สำเร็จแล้ว
+        Log.i("PredictionFlow", "Detector created for model: " + modelFile.getName());
+
+        if (!ImgFile.exists()) {
+            // Log Error เมื่อหาไฟล์ภาพที่จะใช้ทำนายผลไม่เจอ
+            Log.i("PredictionFlow", "Image file does NOT exist at: " + pathFile);
+            return;
+        } else {
+            // Log ยืนยันว่าเจอไฟล์ภาพและกำลังจะโหลด
+            Log.i("PredictionFlow", "Image file found. Loading bitmap...");
+            bitmap = LoadBitMapFromSDCard(pathFile);
+
+            // ตรวจสอบว่าโหลด Bitmap สำเร็จหรือไม่
+            if (bitmap == null) {
+                Log.e("PredictionFlow", "Failed to load bitmap from path: " + pathFile);
+                return;
+            }
+            // Log ยืนยันว่าโหลด Bitmap สำเร็จ
+            Log.i("PredictionFlow", "Bitmap loaded successfully. Preparing for detection...");
+
+            TensorImage imgTensor = TensorImage.fromBitmap(bitmap);
+            results = detector.detect(imgTensor);
+
+            // Log เพื่อบอกว่าการทำนายผลเสร็จสิ้น และกำลังจะเข้าสู่ขั้นตอนประมวลผล
+            Log.i("PredictionFlow", "Detection complete. Processing results...");
+            processResultOfDetection(results, bitmap, area, threshold, allResultsInArea, options);
+        }
+
+        // Log เพื่อบอกว่าทุกขั้นตอนสำหรับ Area นี้เสร็จสิ้นแล้ว
+        Log.i("PredictionFlow", "===== Finished Prediction for Area: " + area + " =====");
+    }
+
+    private List<FinalAreaResult> processResultOfDetection(List<Detection> results,  Bitmap bitmap,
+                                          int area, float threshold, List<FinalAreaResult> allResultsInArea,
+                                          ObjectDetector.ObjectDetectorOptions options) throws IOException{
+        // Log เพื่อติดตามว่าโปรแกรมได้เข้ามาทำงานในเมธอดนี้แล้ว
+        Log.i("PredictionFlow", "Now in processResultOfDetection for Area: " + area);
+
+        List<FinalAreaResult> finalAreaResults = new ArrayList<>();
+
+        if (results.isEmpty()) {
+            // Log เป็น Warning เมื่อโมเดลทำงานแต่ไม่เจอวัตถุใดๆ
+            Log.i("PredictionFlow", "Result list is EMPTY. No objects detected.");
+        } else {
+            Log.i("PredictionFlow", "Result list has " + results.size() + " items. Looping through results...");
+
+            int itemNumber = 1;
+            for (Detection detectedObject : results) {
+                Category topCategory = detectedObject.getCategories().get(0);
+                String label = topCategory.getLabel();
+                float score = topCategory.getScore();
+                RectF box = detectedObject.getBoundingBox();
+
+                // Log รายละเอียดของแต่ละวัตถุที่เจอ
+                Log.i("PredictionFlow", "--- Item #" + itemNumber + " ---");
+                Log.i("PredictionFlow", "Label: " + label + ", Score: " + score);
+
+                itemNumber++;
+            }
+        }
+
+        return finalAreaResults;
+    }
+
+    private ObjectDetector.ObjectDetectorOptions modelSetting(float threshold) {
+        return ObjectDetector.ObjectDetectorOptions.builder()
+                .setScoreThreshold(threshold)
+                .build();
+    }
+
+    private File getModelFile() throws IOException {
+        String nameModel = "SensuayV2.tflite";
+        // Log เพื่อดูว่ากำลังร้องขอโมเดลชื่ออะไร
+        Log.i("PredictionFlow", "Requesting model file: " + nameModel);
+        return convertModelFileFromAssetsToTempFile(nameModel);
+    }
+
+    private File convertModelFileFromAssetsToTempFile(String modelFileName) {
+        try {
+            InputStream inputStream = getAssets().open(modelFileName);
+            File tempFile = File.createTempFile(modelFileName, null);
+            tempFile.deleteOnExit();
+
+            try (FileOutputStream outputStream = new FileOutputStream(tempFile)) {
+                byte[] buffer = new byte[4 * 1024];
+                int bytesRead;
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    outputStream.write(buffer, 0, bytesRead);
+                }
+            }
+
+            // Log ยืนยันว่าการคัดลอกไฟล์โมเดลสำเร็จ
+            Log.i("PredictionFlow", "Model '" + modelFileName + "' copied to temp file successfully.");
+            return tempFile;
+
+        } catch (IOException e) {
+            // Log Error ให้เห็นชัดเจนเมื่อคัดลอกไฟล์ล้มเหลว
+            Log.i("PredictionFlow", "Failed to copy model from assets: " + modelFileName, e);
+            return null;
+        }
+    }
+
+    private String getImagePath(int numImg) {
+        String path = "sdcard/data/jp.jaxa.iss.kibo.rpc.thailand/immediate/DebugImages/imgArea_" + numImg + ".png";
+        // Log เพื่อดู Path ของรูปภาพที่ถูกสร้างขึ้น
+        Log.i("PredictionFlow", "Generated image path: " + path);
+        return path;
+    }
+
+    private String getBackupImage(int numImg) {
+        Log.i("PredictionFlow", "WARNING: Calling for a backup image for area " + numImg);
+        return "sdcard/data/jp.jaxa.iss.kibo.rpc.thailand/immediate/DebugImages/imgBackup_" + numImg + ".png";
+    }
+
+    public static Bitmap LoadBitMapFromSDCard(String path) {
+        File imgFile = new File(path);
+        if (imgFile.exists()) {
+            // Log เพื่อยืนยันว่ากำลังโหลด Bitmap จากไฟล์ที่เจอ
+            Log.i("PredictionFlow", "Loading bitmap from existing file: " + path);
+            return BitmapFactory.decodeFile(imgFile.getAbsolutePath());
+        }
+        // Log Error เมื่อหาไฟล์ที่จะโหลดไม่เจอ
+        Log.i("PredictionFlow", "Bitmap file does NOT exist at: " + path);
+        return null;
+    }
+
+    private void HandleErrorPrediction(int numImg) {
 
     }
 }

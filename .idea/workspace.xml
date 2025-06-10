@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="13b8ef75-1e56-4df9-8da7-0a0a3284475e" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/SENSUAY_TEAM/app/src/main/java/jp/jaxa/iss/kibo/rpc/SENSUAY_TEAM/YourService.java" beforeDir="false" afterPath="$PROJECT_DIR$/SENSUAY_TEAM/app/src/main/java/jp/jaxa/iss/kibo/rpc/SENSUAY_TEAM/YourService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -47,7 +47,9 @@
       <map>
         <entry key="MAIN">
           <value>
-            <State />
+            <State>
+              <option name="COLUMN_ORDER" />
+            </State>
           </value>
         </entry>
       </map>

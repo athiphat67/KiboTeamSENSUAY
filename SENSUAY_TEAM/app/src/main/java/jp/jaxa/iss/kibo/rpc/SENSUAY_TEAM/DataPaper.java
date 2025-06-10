@@ -1,54 +1,108 @@
 package jp.jaxa.iss.kibo.rpc.SENSUAY_TEAM;
 
-import org.opencv.core.Point;
+import org.opencv.core.Mat;
 
+/**
+ * A data class to hold all relevant information from a single paper capture event.
+ * This includes the processed image, success status, and pose data (rvec, tvec).
+ */
 public class DataPaper {
-    // หมายเลขกระดาษ (เช่น 1, 2, 3 … หรือ 23 ถ้าต้องการเก็บสองหลัก)
+
+    // --- Fields ---
+    private Mat captureImage;
+    private boolean isSuccess;
+    private String statusMessage;
     private int paperNumber;
-    // Aruco ID ที่ตรวจเจอ (มักได้มาจาก ids.get(...)[0])
     private int arucoId;
-    // เวกเตอร์การหมุน (rvec) ขนาด 3 (rx, ry, rz)
     private double[] rvec;
-    // เวกเตอร์การแปล (tvec) ขนาด 3 (tx, ty, tz)
     private double[] tvec;
 
+    // --- Constructors ---
+
     /**
-     * สร้าง PaperPose โดยระบุค่าทั้งหมดเลย
-     * @param paperNumber  หมายเลขกระดาษ
-     * @param arucoId      หมายเลข Aruco ID
-     * @param rvec         double[3] (rx, ry, rz)
-     * @param tvec         double[3] (tx, ty, tz)
+     * The main constructor for a successful capture event.
      */
-    public DataPaper(int paperNumber, int arucoId, double[] rvec, double[] tvec) {
+    public DataPaper(Mat captureImage, boolean isSuccess, int paperNumber, int arucoId, double[] rvec, double[] tvec) {
+        this.captureImage = captureImage;
+        this.isSuccess = isSuccess;
         this.paperNumber = paperNumber;
         this.arucoId = arucoId;
 
-        // ตรวจความยาว array ว่าถูกต้องหรือไม่
+        // Ensure rvec is a 3-element array
         if (rvec != null && rvec.length == 3) {
             this.rvec = new double[3];
             System.arraycopy(rvec, 0, this.rvec, 0, 3);
         } else {
-            // ถ้าไม่ใช่ขนาด 3 ก็สร้าง array ค่า 0 ทั้งหมด
-            this.rvec = new double[] {0, 0, 0};
+            this.rvec = new double[]{0, 0, 0};
         }
 
+        // Ensure tvec is a 3-element array
         if (tvec != null && tvec.length == 3) {
             this.tvec = new double[3];
             System.arraycopy(tvec, 0, this.tvec, 0, 3);
         } else {
-            this.tvec = new double[] {0, 0, 0};
+            this.tvec = new double[]{0, 0, 0};
         }
     }
 
-    /** สร้าง PaperPose เปล่าที่รอใส่ค่า later */
+    /**
+     * Constructor for a failed capture event.
+     */
+    public DataPaper(String error) {
+        this.captureImage = new Mat(); // Return an empty Mat
+        this.isSuccess = false;
+        this.statusMessage = error;
+        this.arucoId = -1; // -1 indicates no ID was found
+        this.rvec = new double[0];
+        this.tvec = new double[0];
+    }
+
+    /**
+     * Legacy constructor.
+     */
+    public DataPaper(Mat mat, boolean b, int inputpaper, int i) {
+        this.captureImage = mat;
+        this.isSuccess = b;
+        this.paperNumber = inputpaper;
+        this.arucoId = i;
+        this.rvec = new double[0];
+        this.tvec = new double[0];
+    }
+
+    /** * สร้าง PaperPose เปล่าที่รอใส่ค่า later
+     */
     public DataPaper() {
         this.paperNumber = 0;
         this.arucoId = 0;
-        this.rvec = new double[] {0, 0, 0};
-        this.tvec = new double[] {0, 0, 0};
+        this.rvec = new double[]{0, 0, 0};
+        this.tvec = new double[]{0, 0, 0};
     }
 
-    // ------- Getters & Setters -------
+    // --- Getters & Setters ---
+
+    public Mat getCaptureImage() {
+        return captureImage;
+    }
+
+    public void setCaptureImage(Mat captureImage) {
+        this.captureImage = captureImage;
+    }
+
+    public boolean isSuccess() {
+        return isSuccess;
+    }
+
+    public void setSuccess(boolean success) {
+        isSuccess = success;
+    }
+
+    public String getStatusMessage() {
+        return statusMessage;
+    }
+
+    public void setStatusMessage(String statusMessage) {
+        this.statusMessage = statusMessage;
+    }
 
     public int getPaperNumber() {
         return paperNumber;
@@ -94,14 +148,16 @@ public class DataPaper {
         }
     }
 
+    // --- Overridden Methods ---
+
     @Override
     public String toString() {
-        return "PaperPose{" +
+        return "DataPaper{" +
                 "paperNumber=" + paperNumber +
+                ", isSuccess=" + isSuccess +
                 ", arucoId=" + arucoId +
                 ", rvec=[" + rvec[0] + ", " + rvec[1] + ", " + rvec[2] + "]" +
                 ", tvec=[" + tvec[0] + ", " + tvec[1] + ", " + tvec[2] + "]" +
                 '}';
     }
 }
-
