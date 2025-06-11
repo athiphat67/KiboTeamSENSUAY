@@ -3,6 +3,7 @@ package jp.jaxa.iss.kibo.rpc.SENSUAY_TEAM;
 import jp.jaxa.iss.kibo.rpc.api.KiboRpcService;
 import gov.nasa.arc.astrobee.types.Point;
 import gov.nasa.arc.astrobee.types.Quaternion;
+import gov.nasa.arc.astrobee.Result;
 
 import org.opencv.aruco.Aruco;
 import org.opencv.aruco.Dictionary;
@@ -31,6 +32,10 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.lang.Math;
+
 import org.tensorflow.lite.support.image.TensorImage;
 import org.tensorflow.lite.support.label.Category;
 import org.tensorflow.lite.task.vision.detector.Detection;
@@ -46,126 +51,39 @@ public class YourService extends KiboRpcService {
     private ObjectDetector mainDetector;
     private boolean areModelsReady = false;
 
-    @Override
-    protected void runPlan1() {
-        // StartMissions
-        api.startMission();
+    // enum ระบุชื่อจุด
+    private enum MissionTarget {
+        AREA1_POINT1,
+        AREA1_POINT2,
+        AREA2_ENTRANCE,
+        AREA23_CAPTURE,
+        AREA3_EXIT,
+        AREA4_CAPTURE,
+        ASTRONAUT_INTERACTION_POS
+    }
 
-        try {
-            moveToArea1();
-        } catch (IOException e) {
-            e.printStackTrace();
+    // Maps เก็บตำแหน่งและทิศทาง
+    private Map<MissionTarget, Point> targetPositions;
+    private Map<MissionTarget, Quaternion> targetOrientations;
+
+    public YourService() {
+        targetPositions = new HashMap<>();
+        targetOrientations = new HashMap<>();
+    }
+
+    public boolean moveToArea(Point position, Quaternion orientation) throws IOException{
+        Result moveResult = api.moveTo(position, orientation, false);
+        int loopCount = 0;
+        while (!moveResult.hasSucceeded() && loopCount < 3) {
+            Log.w("MoveToArea", "Move failed, retrying... Attempt: " + (loopCount + 1));
+            moveResult = api.moveTo(position, orientation, false);
+            loopCount++;
         }
-
-//        try {
-//            moveTo115cm();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//
-//        try {
-//            moveToArea4();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//
-//        try {
-//            moveToAstronaut();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//        api.reportRoundingCompletion();
-
-        // Shutdown
-        api.shutdownFactory();
-
-    }
-
-    private void moveToArea1() throws IOException {
-        // point 1: oasis 1 → area 1
-        Point p1 = new Point(10.9d, -9.92284d, 5.195d);
-        Quaternion q1 = eulerToQuaternion(0, 0, -90);
-        api.moveTo(p1, q1, false);
-
-        // point 2: oasis 2 → area 1
-        Point p1_2 = new Point(11.175, -10.03, 5.245);
-        Quaternion q2 = eulerToQuaternion(0, 0, -90);
-        api.moveTo(p1_2, q2, true);
-
-
-
-        DataPaper result1 = CapturePaper(1);
-        Mat imgResult = result1.getCaptureImage();
-        api.saveMatImage(imgResult, "imgArea_"+ 1 +".png");
-
-        //Prediction(1);
-
-    }
-
-    // move in to oasis 2
-    private void moveInO2() {
-        Point p23in = new Point(11.150, -8.55, 5.115);
-        Quaternion q23 = eulerToQuaternion(90, 0, 0);
-        api.moveTo(p23in, q23, true);
-
-    }
-
-
-    private void moveTo115cm() throws IOException {
-        Point p115 = new Point(11.150, -8.45, 4.912); // ห่างจากระนาบ 115 cm
-        Quaternion q23 = eulerToQuaternion(90, 0, 0);
-        api.moveTo(p115, q23, true);
-
-        SystemClock.sleep(5000);
-
-        DataPaper result2 = CapturePaper(2);
-        Mat imgResult2 = result2.getCaptureImage();
-        api.saveMatImage(imgResult2, "imgArea_"+ 2 +".png");
-
-        Prediction(2);
-
-        DataPaper result3 = CapturePaper(3);
-        Mat imgResult3 = result3.getCaptureImage();
-        api.saveMatImage(imgResult3, "imgArea_"+ 3 +".png");
-
-        Prediction(3);
-    }
-
-    private void moveOutO3() {
-        Point p23out = new Point(11.150, -8.35, 5.115);
-        Quaternion q4 = eulerToQuaternion(-15, 0, 180); // หันออกจอ 15 deg
-        //api.moveTo(p23out, q4, true);
-    }
-
-
-    private void moveToArea4() throws IOException {
-        // point 5: oasis 4 → area 4
-        Point p4 = new Point(11.1, -6.875, 4.8);
-        Quaternion q4 = eulerToQuaternion(-10, 0, 180); // หันออกจอ 15 deg
-        api.moveTo(p4, q4, true);
-
-        SystemClock.sleep(2000);
-
-        DataPaper result4 = CapturePaper(4);
-        Mat imgResult4 = result4.getCaptureImage();
-        api.saveMatImage(imgResult4, "imgArea_"+ 4 +".png");
-
-        Prediction(4);
-
-    }
-
-    private void moveToAstronaut() throws IOException {
-        Point astroPoint = new Point(11.143d, -6.7607d, 4.9654d);
-        Quaternion astroQ = new Quaternion(0f, 0f, 0.707f, 0.707f); // หันไปทางขวา (y+)
-        api.moveTo(astroPoint, astroQ, false);
-        api.reportRoundingCompletion();
-        SystemClock.sleep(1000);
-
-        DataPaper result5 = CapturePaper(5);
-        Mat imgResult5 = result5.getCaptureImage();
-        api.saveMatImage(imgResult5, "imgArea_"+ 5 +".png");
-
-        Prediction(5);
+        if (!moveResult.hasSucceeded()) {
+            Log.e("MoveToWrapper", "Move failed after multiple retries to: " + position.toString());
+            return false;
+        }
+        return true;
     }
 
     private Quaternion eulerToQuaternion(double pitchDeg, double rollDeg, double yawDeg) {
@@ -187,6 +105,223 @@ public class YourService extends KiboRpcService {
 
         return new Quaternion((float) x, (float) y, (float) z, (float) w);
     }
+
+    private void performCaptureAndPrediction(int areaNumber, long sleepDurationMillis) {
+        SystemClock.sleep(sleepDurationMillis); //
+
+        DataPaper result = CapturePaper(areaNumber); // CapturePaper() เป็นเมธอดที่คุณมีอยู่แล้วในโค้ด
+        Mat imgResult = result.getCaptureImage(); //
+        api.saveMatImage(imgResult, "imgArea_" + areaNumber + ".png"); //
+    }
+
+    @Override
+    protected void runPlan1() {
+        // StartMissions
+        api.startMission();
+
+        // Position (x,y,x)
+        targetPositions.put(MissionTarget.AREA1_POINT1, new Point(10.9d, -9.92284d, 5.195d)); // area1 : point 1
+        targetPositions.put(MissionTarget.AREA1_POINT2, new Point(11.175, -10.03, 5.245d)); // area1 : point2 (capture)
+        targetPositions.put(MissionTarget.AREA2_ENTRANCE, new Point(11.150, -8.55, 5.115d)); // area2 : move out oasis2's point
+        targetPositions.put(MissionTarget.AREA23_CAPTURE, new Point(11.150, -8.45, 4.912d)); // area2,3 : capture
+        targetPositions.put(MissionTarget.AREA3_EXIT, new Point(11.150, -8.35, 5.115d)); // area3 : move out oasis3's point
+        targetPositions.put(MissionTarget.AREA4_CAPTURE, new Point(11.1d, -6.875, 4.8d)); // area4 : point4 (capture)
+        targetPositions.put(MissionTarget.ASTRONAUT_INTERACTION_POS, new Point(11.143d, -6.7607d, 4.9654d)); // astroPoint ใน moveToAstronaut
+
+        // Quaternion (pitch,roll,yaw)
+        targetOrientations.put(MissionTarget.AREA1_POINT1, eulerToQuaternion(0, 0, -90)); // deg area1
+        targetOrientations.put(MissionTarget.AREA1_POINT2, eulerToQuaternion(0, 0, -90)); // deg area1 capture
+        targetOrientations.put(MissionTarget.AREA2_ENTRANCE, eulerToQuaternion(90, 0, 0)); // deg area2
+        targetOrientations.put(MissionTarget.AREA23_CAPTURE, eulerToQuaternion(90, 0, 0)); // deg area2,3 capture
+        targetOrientations.put(MissionTarget.AREA3_EXIT, eulerToQuaternion(-10, 0, 180)); //  deg area3
+        targetOrientations.put(MissionTarget.AREA4_CAPTURE, eulerToQuaternion(-10, 0, 180)); // deg area4 capture
+        targetOrientations.put(MissionTarget.ASTRONAUT_INTERACTION_POS, eulerToQuaternion(0, 0, 90)); // astroQ ใน moveToAstronaut
+
+        // move to area 1
+        try {
+            Log.i("Mission", "Moving to Area 1");
+            moveToArea(targetPositions.get(MissionTarget.AREA1_POINT1), targetOrientations.get(MissionTarget.AREA1_POINT1));;
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            Log.i("Mission", "Moving to Area 1 Capture Position...");
+            moveToArea(targetPositions.get(MissionTarget.AREA1_POINT2), targetOrientations.get(MissionTarget.AREA1_POINT2));
+            DataPaper result1 = CapturePaper(1);
+            Mat imgResult = result1.getCaptureImage();
+            api.saveMatImage(imgResult, "imgArea_"+ 1 +".png");
+
+            Prediction(1);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // move to area 2
+        try {
+            Log.i("Mission", "Moving in of Oasis 2...");
+            moveToArea(targetPositions.get(MissionTarget.AREA2_ENTRANCE), targetOrientations.get(MissionTarget.AREA2_ENTRANCE));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // area 2,3 capture
+        try {
+            Log.i("Mission", "Moving to Area 2,3 Capture Position...");
+            moveToArea(targetPositions.get(MissionTarget.AREA23_CAPTURE), targetOrientations.get(MissionTarget.AREA23_CAPTURE));
+
+            SystemClock.sleep(4000);
+
+            DataPaper result2 = CapturePaper(2);
+            Mat imgResult2 = result2.getCaptureImage();
+            api.saveMatImage(imgResult2, "imgArea_"+ 2 +".png");
+
+            Prediction(2);
+
+            DataPaper result3 = CapturePaper(3);
+            Mat imgResult3 = result3.getCaptureImage();
+            api.saveMatImage(imgResult3, "imgArea_"+ 3 +".png");
+
+            Prediction(3);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+        try {
+            Log.i("Mission", "Moving out of Oasis 3...");
+            moveToArea(targetPositions.get(MissionTarget.AREA3_EXIT), targetOrientations.get(MissionTarget.AREA3_EXIT));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // move to area 4
+        try {
+            Log.i("Mission", "Moving to Area 4 Capture Position...");
+            moveToArea(targetPositions.get(MissionTarget.AREA4_CAPTURE), targetOrientations.get(MissionTarget.AREA4_CAPTURE));
+
+            SystemClock.sleep(2000);
+
+            DataPaper result4 = CapturePaper(4);
+            Mat imgResult4 = result4.getCaptureImage();
+            api.saveMatImage(imgResult4, "imgArea_"+ 4 +".png");
+
+            Prediction(4);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // move to astronaut
+        try {
+            Log.i("Mission", "Moving to Astronaut Interaction Position...");
+            moveToArea(targetPositions.get(MissionTarget.ASTRONAUT_INTERACTION_POS), targetOrientations.get(MissionTarget.ASTRONAUT_INTERACTION_POS));
+
+            api.reportRoundingCompletion();
+
+            SystemClock.sleep(1000);
+
+            DataPaper result5 = CapturePaper(5);
+            Mat imgResult5 = result5.getCaptureImage();
+            api.saveMatImage(imgResult5, "imgArea_"+ 5 +".png");
+
+            Prediction(5);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        api.reportRoundingCompletion();
+
+        // Shutdown
+        api.shutdownFactory();
+
+    }
+
+//    private void moveToArea1() throws IOException {
+//        // point 1: oasis 1 → area 1
+//        Point p1 = new Point(10.9d, -9.92284d, 5.195d);
+//        Quaternion q1 = eulerToQuaternion(0, 0, -90);
+//        api.moveTo(p1, q1, false);
+//
+//        // point 2: oasis 2 → area 1
+//        Point p1_2 = new Point(11.175, -10.03, 5.245);
+//        Quaternion q2 = eulerToQuaternion(0, 0, -90);
+//        api.moveTo(p1_2, q2, true);
+//
+//
+//
+//        DataPaper result1 = CapturePaper(1);
+//        Mat imgResult = result1.getCaptureImage();
+//        api.saveMatImage(imgResult, "imgArea_"+ 1 +".png");
+//
+//        //Prediction(1);
+//
+//    }
+
+    // move in to oasis 2
+//    private void moveInO2() throws IOException {
+//        Point p23in = new Point(11.150, -8.55, 5.115);
+//        Quaternion q23 = eulerToQuaternion(90, 0, 0);
+//        api.moveTo(p23in, q23, true);
+//
+//    }
+//
+//
+//    private void moveTo115cm() throws IOException {
+//        Point p115 = new Point(11.150, -8.45, 4.912); // ห่างจากระนาบ 115 cm
+//        Quaternion q23 = eulerToQuaternion(90, 0, 0);
+//        api.moveTo(p115, q23, true);
+//
+//        SystemClock.sleep(5000);
+//
+//        DataPaper result2 = CapturePaper(2);
+//        Mat imgResult2 = result2.getCaptureImage();
+//        api.saveMatImage(imgResult2, "imgArea_"+ 2 +".png");
+//
+//        Prediction(2);
+//
+//        DataPaper result3 = CapturePaper(3);
+//        Mat imgResult3 = result3.getCaptureImage();
+//        api.saveMatImage(imgResult3, "imgArea_"+ 3 +".png");
+//
+//        Prediction(3);
+//    }
+//
+//    private void moveOutO3() throws IOException {
+//        Point p23out = new Point(11.150, -8.35, 5.115);
+//        Quaternion q4 = eulerToQuaternion(-15, 0, 180); // หันออกจอ 15 deg
+//        //api.moveTo(p23out, q4, true);
+//    }
+//
+//
+//    private void moveToArea4() throws IOException {
+//        // point 5: oasis 4 → area 4
+//        Point p4 = new Point(11.1, -6.875, 4.8);
+//        Quaternion q4 = eulerToQuaternion(-10, 0, 180); // หันออกจอ 15 deg
+//        api.moveTo(p4, q4, true);
+//
+//        SystemClock.sleep(2000);
+//
+//        DataPaper result4 = CapturePaper(4);
+//        Mat imgResult4 = result4.getCaptureImage();
+//        api.saveMatImage(imgResult4, "imgArea_"+ 4 +".png");
+//
+//        Prediction(4);
+//
+//    }
+//
+//    private void moveToAstronaut() throws IOException {
+//        Point astroPoint = new Point(11.143d, -6.7607d, 4.9654d);
+//        Quaternion astroQ = eulerToQuaternion(0, 0, 90); // หันไปทางขวา (y+)
+//        api.moveTo(astroPoint, astroQ, false);
+//        api.reportRoundingCompletion();
+//        SystemClock.sleep(1000);
+//
+//        DataPaper result5 = CapturePaper(5);
+//        Mat imgResult5 = result5.getCaptureImage();
+//        api.saveMatImage(imgResult5, "imgArea_"+ 5 +".png");
+//
+//        Prediction(5);
+//    }
 
     private DataPaper CapturePaper(int paper) {
 
