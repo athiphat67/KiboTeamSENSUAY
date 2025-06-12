@@ -39,6 +39,7 @@ import java.lang.Math;
 public class YourService extends KiboRpcService {
 
     ArrayList<List<Map<String, Object>>> resultList = new ArrayList<>();
+    ArrayList<DataPaper> ListDataPaper = new ArrayList<>();
 
     // enum class ระบุชื่อจุด
     private enum MissionTarget {
@@ -142,6 +143,7 @@ public class YourService extends KiboRpcService {
             DataPaper result1 = CapturePaper(1);
             Mat imgResult = result1.getCaptureImage();
             api.saveMatImage(imgResult, "imgArea_"+ 1 +".png");
+            ListDataPaper.add(result1);
 
             ObjectDetector detector = new ObjectDetector(this);
             resultList.add(detector.processImage(result1));
@@ -225,6 +227,17 @@ public class YourService extends KiboRpcService {
             ObjectDetector detector = new ObjectDetector(this);
             resultList.add(detector.processImage(result5));
 
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        api.notifyRecognitionItem();
+
+        //move to targetArea
+        int NumberResultPaper = 1;
+        DataPaper resultPaper = ListDataPaper.get(0);
+        try {
+            moveToReportArea(NumberResultPaper, resultPaper);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -499,4 +512,78 @@ public class YourService extends KiboRpcService {
         return new DataPaper(imgResult, true, Inputpaper, arucoid, rvec_array, tvec_array);
     }
 
+    private void reportArea1(double[] tvec, Point position) throws IOException {
+        double x0 = tvec[0];
+        double y0 = tvec[1];
+        double z0 = tvec[2];
+        double x1 = position.getX();
+        double y1 = position.getY();
+        double z1 = position.getZ();
+        boolean check = moveToArea(targetPositions.get(MissionTarget.AREA1_POINT2), targetOrientations.get(MissionTarget.AREA1_POINT2));
+        Point reportPoint = new Point(x1 + x0, -9.83, z1 + z0);
+        if (check) {
+            boolean reportPosition =  moveToArea(reportPoint, targetOrientations.get(MissionTarget.AREA1_POINT2));
+        }
+    }
+
+    private void reportArea2(double[] tvec, Point position) throws IOException {
+        double x0 = tvec[0];
+        double y0 = tvec[1];
+        double z0 = tvec[2];
+        double x2 = position.getX();
+        double y2 = position.getY();
+        double z2 = position.getZ();
+        boolean check = moveToArea(targetPositions.get(MissionTarget.AREA23_CAPTURE), targetOrientations.get(MissionTarget.AREA23_CAPTURE));
+        Point reportPoint = new Point(x2 + x0, y2 + y0, 4.51203);
+        if (check) {
+            boolean reportPosition =  moveToArea(reportPoint, targetOrientations.get(MissionTarget.AREA23_CAPTURE));
+        }
+    }
+
+    private void reportArea3(double[] tvec, Point position) throws IOException {
+        double x0 = tvec[0];
+        double y0 = tvec[1];
+        double z0 = tvec[2];
+        double x3 = position.getX();
+        double y3 = position.getY();
+        double z3 = position.getZ();
+        Point reportPoint = new Point(x3 + x0, y3 + y0, 4.51203);
+        boolean check = moveToArea(targetPositions.get(MissionTarget.AREA23_CAPTURE), targetOrientations.get(MissionTarget.AREA23_CAPTURE));
+        if (check) {
+            boolean reportPosition = moveToArea(reportPoint, targetOrientations.get(MissionTarget.AREA23_CAPTURE));
+        }
+    }
+
+    private void reportArea4(double[] tvec, Point position) throws IOException {
+        double x0 = tvec[0];
+        double y0 = tvec[1];
+        double z0 = tvec[2];
+        double x4 = position.getX();
+        double y4 = position.getY();
+        double z4 = position.getZ();
+        boolean check = moveToArea(targetPositions.get(MissionTarget.AREA4_CAPTURE), targetOrientations.get(MissionTarget.AREA4_CAPTURE));
+        Point reportPoint = new Point(10.616984, y4 + y0, z4 + z0);
+        if (check) {
+            boolean reportPosition = moveToArea(reportPoint, targetOrientations.get(MissionTarget.AREA4_CAPTURE));
+        }
+    }
+
+    public void moveToReportArea(int Area_num,DataPaper dataPaper) throws IOException {
+        switch(Area_num){
+            case 1:
+                reportArea1(dataPaper.getTvec(),targetPositions.get(MissionTarget.AREA1_POINT2));
+                break;
+            case 2:
+                reportArea2(dataPaper.getTvec(),targetPositions.get(MissionTarget.AREA23_CAPTURE));
+                break;
+            case 3:
+                reportArea3(dataPaper.getTvec(),targetPositions.get(MissionTarget.AREA23_CAPTURE));
+                break;
+            case 4:
+                reportArea4(dataPaper.getTvec(),targetPositions.get(MissionTarget.AREA4_CAPTURE));
+                break;
+
+        }
+        api.takeTargetItemSnapshot();
+    }
 }
