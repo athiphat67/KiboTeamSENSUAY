@@ -76,13 +76,14 @@ public class ObjectDetector {
      * @param image รูปภาพต้นฉบับในรูปแบบ Mat (OpenCV)
      * @return List ของ Map ที่แต่ละ Map เป็นการตรวจจับที่ผ่าน NMS แล้ว (มี confidence, classId, className)
      */
-    public List<Map<String, Object>> processImage(Mat image) {
+    public List<Map<String, Object>> processImage(DataPaper image) {
         List<Map<String, Object>> finalDetections = new ArrayList<>();
         Log.i(TAG, "Starting image processing.");
         try {
+            Mat img = image.getCaptureImage();
             // แปลง Mat (OpenCV) เป็น Bitmap (Android)
-            Bitmap bitmap = Bitmap.createBitmap(image.cols(), image.rows(), Bitmap.Config.ARGB_8888);
-            Utils.matToBitmap(image, bitmap);
+            Bitmap bitmap = Bitmap.createBitmap(img.cols(), img.rows(), Bitmap.Config.ARGB_8888);
+            Utils.matToBitmap(img, bitmap);
             Log.i(TAG, "Converted Mat to Bitmap. Size: " + bitmap.getWidth() + "x" + bitmap.getHeight());
 
             if (bitmap == null) {
