@@ -43,7 +43,7 @@ public class ObjectDetector {
 
     public ObjectDetector(Context context) {
         try {
-            MappedByteBuffer modelBuffer = FileUtil.loadMappedFile(context, "model_with_metadata.tflite");
+            MappedByteBuffer modelBuffer = FileUtil.loadMappedFile(context, "SensuayModelV3.tflite");
             Interpreter.Options interpretOptions = new Interpreter.Options();
             interpretOptions.setNumThreads(2);
             this.interpreter = new Interpreter(modelBuffer, interpretOptions);
@@ -52,7 +52,7 @@ public class ObjectDetector {
         }
     }
 
-    public List<Map<String, Object>> processImage(Mat image) {
+    public ArrayList<Map<String, Object>> processImage(Mat image) {
         try {
             Bitmap bitmap = Bitmap.createBitmap(image.cols(), image.rows(), Bitmap.Config.ARGB_8888);;
             Utils.matToBitmap(image,bitmap);
@@ -85,11 +85,11 @@ public class ObjectDetector {
         }
     }
 
-    private List<Map<String, Object>> parseDetections(float[][][] output, int originalWidth, int originalHeight) {
+    private ArrayList<Map<String, Object>> parseDetections(float[][][] output, int originalWidth, int originalHeight) {
         Log.i("parseDetections", "Method started.");
         Log.i("parseDetections", "Input - originalWidth: " + originalWidth + ", originalHeight: " + originalHeight);
 
-        List<Map<String, Object>> detections = new ArrayList<>();
+        ArrayList<Map<String, Object>> detections = new ArrayList<>();
         Log.i("parseDetections", "Initialized detections list.");
 
         // Calculate scale and padding offsets using the helper class
@@ -116,6 +116,9 @@ public class ObjectDetector {
 
             float confidence = prediction[4];
             Log.i("parseDetections", "confidence: " + confidence);
+            for (float num : prediction) {
+                Log.i("parseDetections", String.valueOf(num));
+            }
 
             if (confidence < CONFIDENCE_THRESHOLD) {
                 Log.i("parseDetections", "Confidence (" + confidence + ") is below threshold (" + CONFIDENCE_THRESHOLD + "). Skipping this prediction.");
