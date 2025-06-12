@@ -38,9 +38,7 @@ import java.lang.Math;
 
 public class YourService extends KiboRpcService {
 
-    ArrayList<DataPaper> data = new ArrayList<>();
-    private ObjectDetector mainDetector;
-    private boolean areModelsReady = false;
+    ArrayList<List<Map<String, Object>>> resultList = new ArrayList<>();
 
     // enum ระบุชื่อจุด
     private enum MissionTarget {
@@ -128,8 +126,7 @@ public class YourService extends KiboRpcService {
         targetOrientations.put(MissionTarget.AREA4_CAPTURE, eulerToQuaternion(-10, 0, 180)); // deg area4 capture
         targetOrientations.put(MissionTarget.ASTRONAUT_INTERACTION_POS, eulerToQuaternion(0, 0, 90)); // astroQ ใน moveToAstronaut
 
-        // move to area 1
-        //
+        // MOVE TO AREA 1
         try {
             Log.i("Mission", "Moving to Area 1");
             moveToArea(targetPositions.get(MissionTarget.AREA1_POINT1), targetOrientations.get(MissionTarget.AREA1_POINT1));;
@@ -145,81 +142,85 @@ public class YourService extends KiboRpcService {
             api.saveMatImage(imgResult, "imgArea_"+ 1 +".png");
 
             ObjectDetector detector = new ObjectDetector(this);
-            ArrayList<ArrayList<Map<String, Object>>> list = new ArrayList<>();
-            list.add(detector.processImage(imgResult));
+            resultList.add(detector.processImage(imgResult));
 
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-//        // move to area 2
-//        try {
-//            Log.i("Mission", "Moving in of Oasis 2...");
-//            moveToArea(targetPositions.get(MissionTarget.AREA2_ENTRANCE), targetOrientations.get(MissionTarget.AREA2_ENTRANCE));
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//
-//        // area 2,3 capture
-//        try {
-//            Log.i("Mission", "Moving to Area 2,3 Capture Position...");
-//            moveToArea(targetPositions.get(MissionTarget.AREA23_CAPTURE), targetOrientations.get(MissionTarget.AREA23_CAPTURE));
-//
-//            SystemClock.sleep(4000);
-//
-//            DataPaper result2 = CapturePaper(2);
-//            Mat imgResult2 = result2.getCaptureImage();
-//            api.saveMatImage(imgResult2, "imgArea_"+ 2 +".png");
-//
-//            DataPaper result3 = CapturePaper(3);
-//            Mat imgResult3 = result3.getCaptureImage();
-//            api.saveMatImage(imgResult3, "imgArea_"+ 3 +".png");
-//
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//
-//
-//        try {
-//            Log.i("Mission", "Moving out of Oasis 3...");
-//            moveToArea(targetPositions.get(MissionTarget.AREA3_EXIT), targetOrientations.get(MissionTarget.AREA3_EXIT));
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//
-//        // move to area 4
-//        try {
-//            Log.i("Mission", "Moving to Area 4 Capture Position...");
-//            moveToArea(targetPositions.get(MissionTarget.AREA4_CAPTURE), targetOrientations.get(MissionTarget.AREA4_CAPTURE));
-//
-//            SystemClock.sleep(2000);
-//
-//            DataPaper result4 = CapturePaper(4);
-//            Mat imgResult4 = result4.getCaptureImage();
-//            api.saveMatImage(imgResult4, "imgArea_"+ 4 +".png");
-//
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//
-//        // move to astronaut
-//        try {
-//            Log.i("Mission", "Moving to Astronaut Interaction Position...");
-//            moveToArea(targetPositions.get(MissionTarget.ASTRONAUT_INTERACTION_POS), targetOrientations.get(MissionTarget.ASTRONAUT_INTERACTION_POS));
-//
-//            api.reportRoundingCompletion();
-//
-//            SystemClock.sleep(1000);
-//
-//            DataPaper result5 = CapturePaper(5);
-//            Mat imgResult5 = result5.getCaptureImage();
-//            api.saveMatImage(imgResult5, "imgArea_"+ 5 +".png");
-//
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//
-//        api.reportRoundingCompletion();
+        // move to area 2
+        try {
+            Log.i("Mission", "Moving in of Oasis 2...");
+            moveToArea(targetPositions.get(MissionTarget.AREA2_ENTRANCE), targetOrientations.get(MissionTarget.AREA2_ENTRANCE));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // area 2,3 capture
+        try {
+            Log.i("Mission", "Moving to Area 2,3 Capture Position...");
+            moveToArea(targetPositions.get(MissionTarget.AREA23_CAPTURE), targetOrientations.get(MissionTarget.AREA23_CAPTURE));
+            ObjectDetector detector = new ObjectDetector(this);
+
+            SystemClock.sleep(2000);
+
+            DataPaper result2 = CapturePaper(2);
+            Mat imgResult2 = result2.getCaptureImage();
+            api.saveMatImage(imgResult2, "imgArea_"+ 2 +".png");
+            resultList.add(detector.processImage(imgResult2));
+
+            DataPaper result3 = CapturePaper(3);
+            Mat imgResult3 = result3.getCaptureImage();
+            api.saveMatImage(imgResult3, "imgArea_"+ 3 +".png");
+            resultList.add(detector.processImage(imgResult3));
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+        try {
+            Log.i("Mission", "Moving out of Oasis 3...");
+            moveToArea(targetPositions.get(MissionTarget.AREA3_EXIT), targetOrientations.get(MissionTarget.AREA3_EXIT));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // move to area 4
+        try {
+            Log.i("Mission", "Moving to Area 4 Capture Position...");
+            moveToArea(targetPositions.get(MissionTarget.AREA4_CAPTURE), targetOrientations.get(MissionTarget.AREA4_CAPTURE));
+
+            SystemClock.sleep(2000);
+
+            DataPaper result4 = CapturePaper(4);
+            Mat imgResult4 = result4.getCaptureImage();
+            api.saveMatImage(imgResult4, "imgArea_"+ 4 +".png");
+            ObjectDetector detector = new ObjectDetector(this);
+            resultList.add(detector.processImage(imgResult4));
+
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // move to astronaut
+        try {
+            Log.i("Mission", "Moving to Astronaut Interaction Position...");
+            moveToArea(targetPositions.get(MissionTarget.ASTRONAUT_INTERACTION_POS), targetOrientations.get(MissionTarget.ASTRONAUT_INTERACTION_POS));
+            api.reportRoundingCompletion();
+
+            SystemClock.sleep(3000);
+
+            DataPaper result5 = CapturePaper(5);
+            Mat imgResult5 = result5.getCaptureImage();
+            api.saveMatImage(imgResult5, "imgArea_"+ 5 +".png");
+            ObjectDetector detector = new ObjectDetector(this);
+            resultList.add(detector.processImage(imgResult5));
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         // Shutdown
         api.shutdownFactory();
@@ -369,6 +370,8 @@ public class YourService extends KiboRpcService {
 
             // ---------------------------- นำ kernel มา sharpen ผลลัพธ์อีกครั้ง ----------------------------
             Imgproc.filter2D(imgRotation, imgRotation, -1, kernel);
+
+            api.saveMatImage(imgRotation, "imgCheck.png");
 
             // ------------- imgGray--------------------
             Mat imgGray = new Mat();
