@@ -17,6 +17,11 @@ android {
             abiFilters 'arm64-v8a', 'x86_64'
         }
     }
+
+    aaptOptions {
+        noCompress "tflite"
+    }
+
     buildTypes {
         release {
             minifyEnabled false
@@ -54,4 +59,5 @@ dependencies {
     implementation 'com.quickbirdstudios:opencv-contrib:4.5.3.0'
     // Additional Library
     implementation 'org.tensorflow:tensorflow-lite-task-vision:0.4.0'
+    implementation 'org.tensorflow:tensorflow-lite-support:0.4.3'
 }
