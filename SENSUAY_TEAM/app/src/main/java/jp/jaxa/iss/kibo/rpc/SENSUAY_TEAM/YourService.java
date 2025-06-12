@@ -138,6 +138,7 @@ public class YourService extends KiboRpcService {
         targetOrientations.put(MissionTarget.ASTRONAUT_INTERACTION_POS, eulerToQuaternion(0, 0, 90)); // astroQ ใน moveToAstronaut
 
         // move to area 1
+        //
         try {
             Log.i("Mission", "Moving to Area 1");
             moveToArea(targetPositions.get(MissionTarget.AREA1_POINT1), targetOrientations.get(MissionTarget.AREA1_POINT1));;
