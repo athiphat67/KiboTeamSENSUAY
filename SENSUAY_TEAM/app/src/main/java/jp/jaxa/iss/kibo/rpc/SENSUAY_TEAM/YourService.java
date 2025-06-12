@@ -38,9 +38,7 @@ import java.lang.Math;
 
 public class YourService extends KiboRpcService {
 
-    ArrayList<DataPaper> data = new ArrayList<>();
-    private ObjectDetector mainDetector;
-    private boolean areModelsReady = false;
+    ArrayList<List<Map<String, Object>>> resultList = new ArrayList<>();
 
     // enum class ระบุชื่อจุด
     private enum MissionTarget {
@@ -146,8 +144,7 @@ public class YourService extends KiboRpcService {
             api.saveMatImage(imgResult, "imgArea_"+ 1 +".png");
 
             ObjectDetector detector = new ObjectDetector(this);
-            ArrayList<ArrayList<Map<String, Object>>> list = new ArrayList<>();
-            list.add(detector.processImage(imgResult));
+            resultList.add(detector.processImage(result1));
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -167,6 +164,7 @@ public class YourService extends KiboRpcService {
         try {
             Log.i("Mission", "Moving to Area 2,3 Capture Position...");
             moveToArea(targetPositions.get(MissionTarget.AREA23_CAPTURE), targetOrientations.get(MissionTarget.AREA23_CAPTURE));
+            ObjectDetector detector = new ObjectDetector(this);
 
             // delay astrobee ค้างไว้ 4000 millisecond==4 sec เพื่อเช็คให้ชัวร์ว่านิ่งจริงๆแล้วค่อยถ่ายภาพ
             SystemClock.sleep(4000);
@@ -174,10 +172,12 @@ public class YourService extends KiboRpcService {
             DataPaper result2 = CapturePaper(2);
             Mat imgResult2 = result2.getCaptureImage();
             api.saveMatImage(imgResult2, "imgArea_"+ 2 +".png");
+            resultList.add(detector.processImage(result2));
 
             DataPaper result3 = CapturePaper(3);
             Mat imgResult3 = result3.getCaptureImage();
             api.saveMatImage(imgResult3, "imgArea_"+ 3 +".png");
+            resultList.add(detector.processImage(result3));
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -196,12 +196,14 @@ public class YourService extends KiboRpcService {
         try {
             Log.i("Mission", "Moving to Area 4 Capture Position...");
             moveToArea(targetPositions.get(MissionTarget.AREA4_CAPTURE), targetOrientations.get(MissionTarget.AREA4_CAPTURE));
+            ObjectDetector detector = new ObjectDetector(this);
 
             SystemClock.sleep(2000);
 
             DataPaper result4 = CapturePaper(4);
             Mat imgResult4 = result4.getCaptureImage();
             api.saveMatImage(imgResult4, "imgArea_"+ 4 +".png");
+            resultList.add(detector.processImage(result4));
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -214,18 +216,18 @@ public class YourService extends KiboRpcService {
 
             api.reportRoundingCompletion();
 
-            SystemClock.sleep(1000);
+            SystemClock.sleep(3000);
 
             DataPaper result5 = CapturePaper(5);
             Mat imgResult5 = result5.getCaptureImage();
             api.saveMatImage(imgResult5, "imgArea_"+ 5 +".png");
 
+            ObjectDetector detector = new ObjectDetector(this);
+            resultList.add(detector.processImage(result5));
+
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        // ส่งงานที่เจอ
-        api.reportRoundingCompletion();
 
         // Shutdown
         api.shutdownFactory();
@@ -375,6 +377,7 @@ public class YourService extends KiboRpcService {
 
             // ---------------------------- นำ kernel มา sharpen ผลลัพธ์อีกครั้ง ----------------------------
             Imgproc.filter2D(imgRotation, imgRotation, -1, kernel);
+            api.saveMatImage(imgRotation, "ImgCheckArea_" + Inputpaper + ".png");
 
             // ------------- imgGray--------------------
             Mat imgGray = new Mat();
