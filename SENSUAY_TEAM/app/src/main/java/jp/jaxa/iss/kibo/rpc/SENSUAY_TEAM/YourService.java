@@ -42,7 +42,7 @@ public class YourService extends KiboRpcService {
     private ObjectDetector mainDetector;
     private boolean areModelsReady = false;
 
-    // enum ระบุชื่อจุด
+    // enum class ระบุชื่อจุด
     private enum MissionTarget {
         AREA1_POINT1,
         AREA1_POINT2,
@@ -57,11 +57,16 @@ public class YourService extends KiboRpcService {
     private Map<MissionTarget, Point> targetPositions;
     private Map<MissionTarget, Quaternion> targetOrientations;
 
+    // Constructor ที่สร้างใให้ Map มีการเก็บข้อมูลแบบ Hashmap() ลองศึกษาดูนิดนึงก็ได้หรือปล่อยผ่าน
     public YourService() {
         targetPositions = new HashMap<>();
         targetOrientations = new HashMap<>();
     }
 
+    // method ที่ไว้ใช้ในการเดินทาง
+    // position คือ point ที่เดินทางไป
+    // orientation คือ มุมหรือการหมุนของ astrobee (ให้ astrobee หมุนกล้องไปด้านที่ถูก)
+    // api.moveTo เป็น api ของ kibo (printRobotPosition คืออะไรไม่รู้)
     public boolean moveToArea(Point position, Quaternion orientation) throws IOException{
         Result moveResult = api.moveTo(position, orientation, false);
         int loopCount = 0;
@@ -77,6 +82,7 @@ public class YourService extends KiboRpcService {
         return true;
     }
 
+    // แปลงจากองศารอบแกนหมุนเป็น Quaternion (เป็นสูตรเฉยๆ)
     private Quaternion eulerToQuaternion(double pitchDeg, double rollDeg, double yawDeg) {
         double pitch = Math.toRadians(pitchDeg);
         double roll = Math.toRadians(rollDeg);
@@ -97,19 +103,12 @@ public class YourService extends KiboRpcService {
         return new Quaternion((float) x, (float) y, (float) z, (float) w);
     }
 
-//    private void performCaptureAndPrediction(int areaNumber, long sleepDurationMillis) {
-//        SystemClock.sleep(sleepDurationMillis); //
-//
-//        DataPaper result = CapturePaper(areaNumber); // CapturePaper() เป็นเมธอดที่คุณมีอยู่แล้วในโค้ด
-//        Mat imgResult = result.getCaptureImage(); //
-//        api.saveMatImage(imgResult, "imgArea_" + areaNumber + ".png"); //
-//    }
-
     @Override
     protected void runPlan1() {
         // StartMissions
         api.startMission();
 
+        // Add จุดใหม่ไปที่ enum ของชื่อจุดที่สร้างไว้
         // Position (x,y,x)
         targetPositions.put(MissionTarget.AREA1_POINT1, new Point(10.9d, -9.92284d, 5.195d)); // area1 : point 1
         targetPositions.put(MissionTarget.AREA1_POINT2, new Point(11.175, -10.03, 5.245d)); // area1 : point2 (capture)
@@ -119,6 +118,7 @@ public class YourService extends KiboRpcService {
         targetPositions.put(MissionTarget.AREA4_CAPTURE, new Point(11.1d, -6.875, 4.8d)); // area4 : point4 (capture)
         targetPositions.put(MissionTarget.ASTRONAUT_INTERACTION_POS, new Point(11.143d, -6.7607d, 4.9654d)); // astroPoint ใน moveToAstronaut
 
+        // Add องศารอบแกนหมุนไปที่ชื่อจุด
         // Quaternion (pitch,roll,yaw)
         targetOrientations.put(MissionTarget.AREA1_POINT1, eulerToQuaternion(0, 0, -90)); // deg area1
         targetOrientations.put(MissionTarget.AREA1_POINT2, eulerToQuaternion(0, 0, -90)); // deg area1 capture
@@ -129,7 +129,7 @@ public class YourService extends KiboRpcService {
         targetOrientations.put(MissionTarget.ASTRONAUT_INTERACTION_POS, eulerToQuaternion(0, 0, 90)); // astroQ ใน moveToAstronaut
 
         // move to area 1
-        //
+        // move astrobee ไปที่จุดที่ 1
         try {
             Log.i("Mission", "Moving to Area 1");
             moveToArea(targetPositions.get(MissionTarget.AREA1_POINT1), targetOrientations.get(MissionTarget.AREA1_POINT1));;
@@ -137,6 +137,7 @@ public class YourService extends KiboRpcService {
             e.printStackTrace();
         }
 
+        // move astrobee ไปที่จุดบน oasis 2 พร้อมหมุน astrobee แล้วถ่ายภาพ
         try {
             Log.i("Mission", "Moving to Area 1 Capture Position...");
             moveToArea(targetPositions.get(MissionTarget.AREA1_POINT2), targetOrientations.get(MissionTarget.AREA1_POINT2));
@@ -152,74 +153,79 @@ public class YourService extends KiboRpcService {
             e.printStackTrace();
         }
 
-//        // move to area 2
-//        try {
-//            Log.i("Mission", "Moving in of Oasis 2...");
-//            moveToArea(targetPositions.get(MissionTarget.AREA2_ENTRANCE), targetOrientations.get(MissionTarget.AREA2_ENTRANCE));
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//
-//        // area 2,3 capture
-//        try {
-//            Log.i("Mission", "Moving to Area 2,3 Capture Position...");
-//            moveToArea(targetPositions.get(MissionTarget.AREA23_CAPTURE), targetOrientations.get(MissionTarget.AREA23_CAPTURE));
-//
-//            SystemClock.sleep(4000);
-//
-//            DataPaper result2 = CapturePaper(2);
-//            Mat imgResult2 = result2.getCaptureImage();
-//            api.saveMatImage(imgResult2, "imgArea_"+ 2 +".png");
-//
-//            DataPaper result3 = CapturePaper(3);
-//            Mat imgResult3 = result3.getCaptureImage();
-//            api.saveMatImage(imgResult3, "imgArea_"+ 3 +".png");
-//
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//
-//
-//        try {
-//            Log.i("Mission", "Moving out of Oasis 3...");
-//            moveToArea(targetPositions.get(MissionTarget.AREA3_EXIT), targetOrientations.get(MissionTarget.AREA3_EXIT));
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//
-//        // move to area 4
-//        try {
-//            Log.i("Mission", "Moving to Area 4 Capture Position...");
-//            moveToArea(targetPositions.get(MissionTarget.AREA4_CAPTURE), targetOrientations.get(MissionTarget.AREA4_CAPTURE));
-//
-//            SystemClock.sleep(2000);
-//
-//            DataPaper result4 = CapturePaper(4);
-//            Mat imgResult4 = result4.getCaptureImage();
-//            api.saveMatImage(imgResult4, "imgArea_"+ 4 +".png");
-//
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//
-//        // move to astronaut
-//        try {
-//            Log.i("Mission", "Moving to Astronaut Interaction Position...");
-//            moveToArea(targetPositions.get(MissionTarget.ASTRONAUT_INTERACTION_POS), targetOrientations.get(MissionTarget.ASTRONAUT_INTERACTION_POS));
-//
-//            api.reportRoundingCompletion();
-//
-//            SystemClock.sleep(1000);
-//
-//            DataPaper result5 = CapturePaper(5);
-//            Mat imgResult5 = result5.getCaptureImage();
-//            api.saveMatImage(imgResult5, "imgArea_"+ 5 +".png");
-//
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//
-//        api.reportRoundingCompletion();
+        // move to area 2
+        // move astrobee ไปที่ oasis 2 (ก่อนจะเคลื่อนที่ตามแนวแกน -z เพื่อเข้าไปถ่ายรูป)
+        try {
+            Log.i("Mission", "Moving in of Oasis 2...");
+            moveToArea(targetPositions.get(MissionTarget.AREA2_ENTRANCE), targetOrientations.get(MissionTarget.AREA2_ENTRANCE));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // area 2,3 capture
+        // move astrobee ไปที่จุดกึ่งกลางระหว่าง oasis และ เคลื่อนที่ขึ้นตามแนวแกน -z เพื่อถ่ายรูปห่างจากระนาบเป็นระยา ~115cm
+        try {
+            Log.i("Mission", "Moving to Area 2,3 Capture Position...");
+            moveToArea(targetPositions.get(MissionTarget.AREA23_CAPTURE), targetOrientations.get(MissionTarget.AREA23_CAPTURE));
+
+            // delay astrobee ค้างไว้ 4000 millisecond==4 sec เพื่อเช็คให้ชัวร์ว่านิ่งจริงๆแล้วค่อยถ่ายภาพ
+            SystemClock.sleep(4000);
+
+            DataPaper result2 = CapturePaper(2);
+            Mat imgResult2 = result2.getCaptureImage();
+            api.saveMatImage(imgResult2, "imgArea_"+ 2 +".png");
+
+            DataPaper result3 = CapturePaper(3);
+            Mat imgResult3 = result3.getCaptureImage();
+            api.saveMatImage(imgResult3, "imgArea_"+ 3 +".png");
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // move astrobee ออกจาก oasis 3 (*อาจจะต้องแก้ เดี๋ยวดูก่อน)
+        try {
+            Log.i("Mission", "Moving out of Oasis 3...");
+            moveToArea(targetPositions.get(MissionTarget.AREA3_EXIT), targetOrientations.get(MissionTarget.AREA3_EXIT));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // move to area 4
+        // move astrobee เข้า area 4 (ยังอยู่ใน oasis 4) แล้วกดกล้องลง ~10 degree (ลองไปดูที่ orientation)
+        try {
+            Log.i("Mission", "Moving to Area 4 Capture Position...");
+            moveToArea(targetPositions.get(MissionTarget.AREA4_CAPTURE), targetOrientations.get(MissionTarget.AREA4_CAPTURE));
+
+            SystemClock.sleep(2000);
+
+            DataPaper result4 = CapturePaper(4);
+            Mat imgResult4 = result4.getCaptureImage();
+            api.saveMatImage(imgResult4, "imgArea_"+ 4 +".png");
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // move to astronaut
+        try {
+            Log.i("Mission", "Moving to Astronaut Interaction Position...");
+            moveToArea(targetPositions.get(MissionTarget.ASTRONAUT_INTERACTION_POS), targetOrientations.get(MissionTarget.ASTRONAUT_INTERACTION_POS));
+
+            api.reportRoundingCompletion();
+
+            SystemClock.sleep(1000);
+
+            DataPaper result5 = CapturePaper(5);
+            Mat imgResult5 = result5.getCaptureImage();
+            api.saveMatImage(imgResult5, "imgArea_"+ 5 +".png");
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // ส่งงานที่เจอ
+        api.reportRoundingCompletion();
 
         // Shutdown
         api.shutdownFactory();
