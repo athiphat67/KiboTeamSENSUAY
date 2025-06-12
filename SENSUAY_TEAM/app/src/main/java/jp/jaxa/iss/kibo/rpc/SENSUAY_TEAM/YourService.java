@@ -172,11 +172,13 @@ public class YourService extends KiboRpcService {
             SystemClock.sleep(4000);
 
             DataPaper result2 = CapturePaper(2);
+            ListDataPaper.add(result2);
             Mat imgResult2 = result2.getCaptureImage();
             api.saveMatImage(imgResult2, "imgArea_"+ 2 +".png");
             resultList.add(detector.processImage(result2));
 
             DataPaper result3 = CapturePaper(3);
+            ListDataPaper.add(result3);
             Mat imgResult3 = result3.getCaptureImage();
             api.saveMatImage(imgResult3, "imgArea_"+ 3 +".png");
             resultList.add(detector.processImage(result3));
@@ -203,6 +205,7 @@ public class YourService extends KiboRpcService {
             SystemClock.sleep(2000);
 
             DataPaper result4 = CapturePaper(4);
+            ListDataPaper.add(result4);
             Mat imgResult4 = result4.getCaptureImage();
             api.saveMatImage(imgResult4, "imgArea_"+ 4 +".png");
             resultList.add(detector.processImage(result4));
@@ -221,6 +224,7 @@ public class YourService extends KiboRpcService {
             SystemClock.sleep(3000);
 
             DataPaper result5 = CapturePaper(5);
+            ListDataPaper.add(result5);
             Mat imgResult5 = result5.getCaptureImage();
             api.saveMatImage(imgResult5, "imgArea_"+ 5 +".png");
 
