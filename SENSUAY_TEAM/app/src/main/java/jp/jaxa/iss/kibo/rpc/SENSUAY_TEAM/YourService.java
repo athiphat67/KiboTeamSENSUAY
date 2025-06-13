@@ -1,7 +1,6 @@
 package jp.jaxa.iss.kibo.rpc.SENSUAY_TEAM;
 
 import jp.jaxa.iss.kibo.rpc.api.KiboRpcService;
-import jp.jaxa.iss.kibo.rpc.SENSUAY_TEAM.ObjectDetector;
 import gov.nasa.arc.astrobee.types.Point;
 import gov.nasa.arc.astrobee.types.Quaternion;
 import gov.nasa.arc.astrobee.Result;
@@ -219,9 +218,10 @@ public class YourService extends KiboRpcService {
             Log.i("Mission", "Moving to Astronaut Interaction Position...");
             moveToArea(targetPositions.get(MissionTarget.ASTRONAUT_INTERACTION_POS), targetOrientations.get(MissionTarget.ASTRONAUT_INTERACTION_POS));
 
+            ReportAllArea(resultList);
             api.reportRoundingCompletion();
 
-            SystemClock.sleep(3000);
+            SystemClock.sleep(5000);
 
             DataPaper result5 = CapturePaper(5);
             ListDataPaper.add(result5);
@@ -238,8 +238,8 @@ public class YourService extends KiboRpcService {
         api.notifyRecognitionItem();
 
         //move to targetArea
-        int NumberResultPaper = 1;
-        DataPaper resultPaper = ListDataPaper.get(0);
+        int NumberResultPaper = FindPaperOfTargetItems();
+        DataPaper resultPaper = ListDataPaper.get(NumberResultPaper - 1);
         try {
             moveToReportArea(NumberResultPaper, resultPaper);
         } catch (IOException e) {
@@ -572,7 +572,7 @@ public class YourService extends KiboRpcService {
         }
     }
 
-    public void moveToReportArea(int Area_num,DataPaper dataPaper) throws IOException {
+    private void moveToReportArea(int Area_num,DataPaper dataPaper) throws IOException {
         switch(Area_num){
             case 1:
                 reportArea1(dataPaper.getTvec(),targetPositions.get(MissionTarget.AREA1_POINT2));
@@ -589,5 +589,85 @@ public class YourService extends KiboRpcService {
 
         }
         api.takeTargetItemSnapshot();
+    }
+
+    private void ReportAllArea(ArrayList<List<Map<String, Object>>> resultList) {
+
+        Log.i("DetectionResults", "กำลังแสดงผลลัพธ์การตรวจจับจาก " + resultList.size() + " รูปภาพ.");
+
+        // วนลูปผ่านแต่ละชุดของผลลัพธ์ (แต่ละรูปภาพ)
+        // ใช้ resultList.size() แทน resultList.size() - 1 เพื่อให้รวมรูปภาพสุดท้ายด้วย
+        for (int imageIndex = 0; imageIndex < resultList.size(); imageIndex++) {
+            List<Map<String, Object>> detectionsForImage = resultList.get(imageIndex);
+            DataPaper dataPaper = ListDataPaper.get(imageIndex);
+
+            // สร้าง Map เพื่อเก็บจำนวนของแต่ละคลาสในรูปภาพปัจจุบัน
+            // Key คือ className (String), Value คือจำนวน (Integer)
+            Map<String, Integer> itemCounts = new HashMap<>();
+
+            Log.i("DetectionResults", "--- ผลลัพธ์สำหรับรูปภาพที่ " + (imageIndex + 1) + " ---");
+
+            if (detectionsForImage.isEmpty()) {
+                Log.i("DetectionResults", "    ไม่พบวัตถุใดๆ ในรูปภาพนี้");
+
+                // หากไม่พบวัตถุใดๆ อาจจะต้องส่งข้อมูลไปที่ API ด้วยค่า 0 หรือตามเงื่อนไขที่กำหนด
+                // ตัวอย่าง: api.setInfoArea(imageIndex + 1, "none", 0);
+                // หรือจะข้ามไปเลยก็ได้ถ้าไม่มีวัตถุ
+            } else {
+                Log.i("DetectionResults", "    พบวัตถุทั้งหมด: " + detectionsForImage.size() + " ชิ้น (ก่อนรวม)");
+
+                // วนลูปผ่านแต่ละการตรวจจับภายในรูปภาพนั้นๆ เพื่อรวมจำนวนไอเท็ม
+                for (Map<String, Object> detection : detectionsForImage) {
+                    String className = (String) detection.get("className");
+
+                    if (className.equalsIgnoreCase("crystal") || className.equalsIgnoreCase("diamond") || className.equalsIgnoreCase("emerald")) {
+                        dataPaper.setTargetItem(className);
+                    }
+
+                    // เพิ่มจำนวนนับสำหรับคลาสนี้
+                    itemCounts.put(className, itemCounts.getOrDefault(className, 0) + 1);
+                }
+
+                Log.i("DetectionResults", "    --- สรุปจำนวนไอเท็มที่ตรวจพบ ---");
+                // วนลูปผ่าน Map ที่เก็บจำนวนไอเท็ม เพื่อส่งข้อมูลไปที่ API และ Logcat
+                for (Map.Entry<String, Integer> entry : itemCounts.entrySet()) {
+                    String itemName = entry.getKey();
+
+                    if (itemName.equalsIgnoreCase("crystal") || itemName.equalsIgnoreCase("emerald") || itemName.equalsIgnoreCase("diamond")) {
+                        continue;
+                    }
+                    int itemNum = entry.getValue();
+
+                    Log.i("DetectionResults",
+                            String.format("    ไอเท็ม: %s, จำนวน: %d", itemName, itemNum));
+
+                    api.setAreaInfo(imageIndex + 1 , itemName, itemNum);
+                }
+            }
+        }
+    }
+
+    private int FindPaperOfTargetItems() {
+
+        List<Map<String, Object>> list = resultList.get(4);
+        String strTargetItem = "";
+
+        for (Map<String, Object> items : list) {
+            String className = (String) items.get("className");
+            if (className.equalsIgnoreCase("crystal")) { strTargetItem = "crystal";}
+            else if (className.equalsIgnoreCase("emerald")) { strTargetItem = "emerald";}
+            else if (className.equalsIgnoreCase("diamond")) { strTargetItem = "diamond";}
+        }
+
+        int numpaper = 0;
+
+        for (int i = 0 ; i < ListDataPaper.size() - 1 ; i++) {
+            String check = ListDataPaper.get(i).getTargetItem();
+            if (check.equalsIgnoreCase(strTargetItem)) {
+                numpaper = ListDataPaper.get(i).getPaperNumber();
+            }
+        }
+
+        return numpaper;
     }
 }

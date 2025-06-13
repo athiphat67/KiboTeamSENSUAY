@@ -10,6 +10,7 @@ public class DataPaper {
 
     // --- Fields ---
     private Mat captureImage;
+    private String targetItem;
     private boolean isSuccess;
     private String statusMessage;
     private int paperNumber;
@@ -27,6 +28,7 @@ public class DataPaper {
         this.isSuccess = isSuccess;
         this.paperNumber = paperNumber;
         this.arucoId = arucoId;
+        this.targetItem = "";
 
         // Ensure rvec is a 3-element array
         if (rvec != null && rvec.length == 3) {
@@ -122,6 +124,14 @@ public class DataPaper {
 
     public double[] getRvec() {
         return rvec;
+    }
+
+    public String getTargetItem() {
+        return targetItem;
+    }
+
+    public void setTargetItem(String targetItem) {
+        this.targetItem = targetItem;
     }
 
     /**
