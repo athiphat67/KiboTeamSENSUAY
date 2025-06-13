@@ -597,7 +597,7 @@ public class YourService extends KiboRpcService {
         double x1 = position.getX();
         double y1 = position.getY();
         double z1 = position.getZ();
-        boolean check = moveToArea(targetPositions.get(MissionTarget.AREA1_POINT2), targetOrientations.get(MissionTarget.AREA1_POINT2));
+
         Point reportPoint = new Point(x1 + x0, -9.83, z1 + z0);
         boolean reportPosition =  moveToArea(reportPoint, targetOrientations.get(MissionTarget.AREA1_POINT2));
 
@@ -638,10 +638,8 @@ public class YourService extends KiboRpcService {
         else { xTvec = x3; }
 
         Point reportPoint = new Point(xTvec, yTvec, 4.66);
-        boolean check = moveToArea(targetPositions.get(MissionTarget.AREA23_CAPTURE), targetOrientations.get(MissionTarget.AREA23_CAPTURE));
-        if (check) {
-            boolean reportPosition = moveToArea(reportPoint, targetOrientations.get(MissionTarget.AREA23_CAPTURE));
-        }
+        boolean reportPosition = moveToArea(reportPoint, targetOrientations.get(MissionTarget.AREA23_CAPTURE));
+
     }
 
     private void reportArea4(double[] tvec, Point position) throws IOException {
@@ -662,9 +660,9 @@ public class YourService extends KiboRpcService {
         else if (y4 < y0) { yTvec = y4 + y0; }
         else {yTvec = y4;}
 
-        boolean check = moveToArea(targetPositions.get(MissionTarget.AREA4_CAPTURE), targetOrientations.get(MissionTarget.AREA4_CAPTURE));
+
         Point reportPoint = new Point(10.56, yTvec, zTvec);
-        boolean reportPosition = moveToArea(reportPoint, targetOrientations.get(MissionTarget.AREA4_CAPTURE));
+        boolean reportPosition = moveToArea(reportPoint, targetOrientations.get(MissionTarget.AREA4_TARGET));
 
     }
 
