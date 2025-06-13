@@ -10,6 +10,7 @@ public class DataPaper {
 
     // --- Fields ---
     private Mat captureImage;
+    private Mat backupImage;
     private String targetItem;
     private boolean isSuccess;
     private String statusMessage;
@@ -23,8 +24,9 @@ public class DataPaper {
     /**
      * The main constructor for a successful capture event.
      */
-    public DataPaper(Mat captureImage, boolean isSuccess, int paperNumber, int arucoId, double[] rvec, double[] tvec) {
+    public DataPaper(Mat captureImage, Mat backupImage, boolean isSuccess, int paperNumber, int arucoId, double[] rvec, double[] tvec) {
         this.captureImage = captureImage;
+        this.backupImage = backupImage;
         this.isSuccess = isSuccess;
         this.paperNumber = paperNumber;
         this.arucoId = arucoId;
@@ -132,6 +134,14 @@ public class DataPaper {
 
     public void setTargetItem(String targetItem) {
         this.targetItem = targetItem;
+    }
+
+    public Mat getBackupImage() {
+        return backupImage;
+    }
+
+    public void setBackupImage(Mat backupImage) {
+        this.backupImage = backupImage;
     }
 
     /**
