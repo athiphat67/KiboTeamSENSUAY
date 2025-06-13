@@ -610,7 +610,15 @@ public class YourService extends KiboRpcService {
         double x2 = position.getX();
         double y2 = position.getY();
         double z2 = position.getZ();
-        Point reportPoint = new Point(x2 - x0, y2 + y0, 4.66);
+
+        double yTvec = y2 - y0;
+        double xTvec ;
+
+        if (x2 < x0) { xTvec = x2 + x0 ;}
+        else if (x2 > x0) { xTvec = x2 - x0 ;}
+        else { xTvec = x2; }
+
+        Point reportPoint = new Point(xTvec, yTvec, 4.66);
         boolean reportPosition =  moveToArea(reportPoint, targetOrientations.get(MissionTarget.AREA23_CAPTURE));
     }
 
@@ -621,7 +629,15 @@ public class YourService extends KiboRpcService {
         double x3 = position.getX();
         double y3 = position.getY();
         double z3 = position.getZ();
-        Point reportPoint = new Point(x3 - x0, y3 + y0, 4.66);
+
+        double yTvec = y3 + y0;
+        double xTvec ;
+
+        if (x3 < x0) { xTvec = x3 + x0 ;}
+        else if (x3 > x0) { xTvec = x3 - x0 ;}
+        else { xTvec = x3; }
+
+        Point reportPoint = new Point(xTvec, yTvec, 4.66);
         boolean check = moveToArea(targetPositions.get(MissionTarget.AREA23_CAPTURE), targetOrientations.get(MissionTarget.AREA23_CAPTURE));
         if (check) {
             boolean reportPosition = moveToArea(reportPoint, targetOrientations.get(MissionTarget.AREA23_CAPTURE));
@@ -635,8 +651,19 @@ public class YourService extends KiboRpcService {
         double x4 = position.getX();
         double y4 = position.getY();
         double z4 = position.getZ();
+        double yTvec ;
+        double zTvec ;
+
+        if (z4 < z0) { zTvec = z0 + z4; }
+        else if ( z4 > z0) { zTvec = z0 - z4;}
+        else { zTvec = z4; }
+
+        if ( y4 > y0) { yTvec = y4 - y0; }
+        else if (y4 < y0) { yTvec = y4 + y0; }
+        else {yTvec = y4;}
+
         boolean check = moveToArea(targetPositions.get(MissionTarget.AREA4_CAPTURE), targetOrientations.get(MissionTarget.AREA4_CAPTURE));
-        Point reportPoint = new Point(10.56, y4 - y0, z4 + z0);
+        Point reportPoint = new Point(10.56, yTvec, zTvec);
         boolean reportPosition = moveToArea(reportPoint, targetOrientations.get(MissionTarget.AREA4_CAPTURE));
 
     }
