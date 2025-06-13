@@ -27,7 +27,7 @@ public class ObjectDetector {
 
     private static final String TAG = "ObjectDetector";
     private static final int INPUT_SIZE = 640; // ขนาดรูปภาพที่ป้อนเข้าโมเดล TFLite (เช่น 640x640)
-    private static final float CONFIDENCE_THRESHOLD = 0.4f; // ค่าความเชื่อมั่นขั้นต่ำ (0.0f - 1.0f)
+    private static final float CONFIDENCE_THRESHOLD = 0.7f; // ค่าความเชื่อมั่นขั้นต่ำ (0.0f - 1.0f)
     private static final float IOU_THRESHOLD = 0.45f;   // ค่า IOU สำหรับ Non-Maximum Suppression (0.0f - 1.0f)
 
     // *** โครงสร้างเอาต์พุตของโมเดล: [Batch, จำนวนฟีเจอร์ต่อการคาดการณ์, จำนวนการคาดการณ์] ***
@@ -102,7 +102,6 @@ public class ObjectDetector {
 
             // สร้าง ImageProcessor เพื่อประมวลผลรูปภาพก่อนเข้าโมเดล
             ImageProcessor imageProcessor = new ImageProcessor.Builder()
-                    // ไม่ใช้ ResizeOp ที่นี่ เพราะการคำนวณ Bounding Box จะอิงกับ INPUT_SIZE
                     .add(new NormalizeOp(0f, 255f)) // Normalize ค่าพิกเซลให้อยู่ในช่วง [0,1]
                     .build();
             tensorImage = imageProcessor.process(tensorImage);
@@ -119,8 +118,12 @@ public class ObjectDetector {
 
             // เรียกใช้ filterConfidenceThreshold เพื่อกรองและประมวลผลผลลัพธ์ดิบ
             finalDetections = filterConfidenceThreshold(output, originalWidth, originalHeight);
-            Log.i(TAG, "Filter and NMS process finished. Found " + finalDetections.size() + " final detections.");
 
+            if (finalDetections.isEmpty()) {
+                finalDetections = processBackupImageForDetections(image);
+            }
+
+            Log.i(TAG, "Filter and NMS process finished. Found " + finalDetections.size() + " final detections.");
 
         } catch (Exception e) {
             Log.e(TAG, "Error processing image: " + e.getMessage(), e);
@@ -247,6 +250,7 @@ public class ObjectDetector {
         }
 
         Log.i(TAG, "filterConfidenceThreshold finished. Total final detections: " + finalDetections.size());
+
         return finalDetections;
     }
 
@@ -395,6 +399,57 @@ public class ObjectDetector {
      */
     private float clamp(float value, float min, float max) {
         return Math.max(min, Math.min(max, value));
+    }
+
+    private List<Map<String, Object>> processBackupImageForDetections(DataPaper image) {
+
+        List<Map<String, Object>> BackupfinalDetections = new ArrayList<>();
+
+        try {
+            Mat img = image.getBackupImage();
+            // แปลง Mat (OpenCV) เป็น Bitmap (Android)
+            Bitmap bitmap = Bitmap.createBitmap(img.cols(), img.rows(), Bitmap.Config.ARGB_8888);
+            Utils.matToBitmap(img, bitmap);
+            Log.i(TAG, "Converted Mat to Bitmap. Size: " + bitmap.getWidth() + "x" + bitmap.getHeight());
+
+            if (bitmap == null) {
+                Log.e(TAG, "Bitmap conversion failed.");
+                throw new RuntimeException("Failed to convert image to bitmap");
+            }
+
+            int originalWidth = bitmap.getWidth();
+            int originalHeight = bitmap.getHeight();
+            Log.i(TAG, "Original image dimensions: " + originalWidth + "x" + originalHeight);
+
+            // เตรียม TensorImage สำหรับป้อนเข้าโมเดล
+            TensorImage tensorImage = new TensorImage();
+            tensorImage.load(bitmap); // โหลด Bitmap ต้นฉบับ (ImageProcessor จะจัดการปรับขนาดในภายหลัง)
+            Log.i(TAG, "Bitmap loaded into TensorImage.");
+
+            // สร้าง ImageProcessor เพื่อประมวลผลรูปภาพก่อนเข้าโมเดล
+            ImageProcessor imageProcessor = new ImageProcessor.Builder()
+                    .add(new NormalizeOp(0f, 255f)) // Normalize ค่าพิกเซลให้อยู่ในช่วง [0,1]
+                    .build();
+            tensorImage = imageProcessor.process(tensorImage);
+            Log.i(TAG, "Image pre-processed by ImageProcessor. TensorImage shape: " + tensorImage.getTensorBuffer().getShape()[0] + "x" + tensorImage.getTensorBuffer().getShape()[1]);
+
+
+            // เตรียม Output Array สำหรับรับผลลัพธ์จาก Interpreter
+            float[][][] output = new float[OUTPUT_BATCH][OUTPUT_FEATURES_PER_PROPOSAL][NUM_TOTAL_PROPOSALS];
+            Log.i(TAG, "Output array initialized with shape: [" + OUTPUT_BATCH + ", " + OUTPUT_FEATURES_PER_PROPOSAL + ", " + NUM_TOTAL_PROPOSALS + "]");
+
+            // รัน Interpreter เพื่ออนุมานผลลัพธ์
+            interpreter.run(tensorImage.getBuffer(), output);
+            Log.i(TAG, "Model inference completed successfully.");
+
+            BackupfinalDetections = filterConfidenceThreshold(output, originalWidth, originalHeight);
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error processing " + ": " + e.getMessage(), e);
+        }
+
+
+        return BackupfinalDetections;
     }
 
 }
