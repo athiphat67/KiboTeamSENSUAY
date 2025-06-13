@@ -119,7 +119,7 @@ public class ObjectDetector {
             // เรียกใช้ filterConfidenceThreshold เพื่อกรองและประมวลผลผลลัพธ์ดิบ
             finalDetections = filterConfidenceThreshold(output, originalWidth, originalHeight);
 
-            if (finalDetections.isEmpty()) {
+            if (finalDetections.size() == 0) {
                 finalDetections = processBackupImageForDetections(image);
             }
 
@@ -402,6 +402,8 @@ public class ObjectDetector {
     }
 
     private List<Map<String, Object>> processBackupImageForDetections(DataPaper image) {
+
+        Log.i("StartBackup", "Start Use BackupImg");
 
         List<Map<String, Object>> BackupfinalDetections = new ArrayList<>();
 
