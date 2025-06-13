@@ -262,6 +262,7 @@ public class YourService extends KiboRpcService {
         double[] rvec_array = new double[3];
         double[] tvec_array = new double[3];
         Mat imgRotation = new Mat();
+        Mat imgBackup = new Mat();
 
 
         // ---------------------------- start setup field ----------------------------
@@ -393,7 +394,9 @@ public class YourService extends KiboRpcService {
 
             // ---------------------------- นำ kernel มา sharpen ผลลัพธ์อีกครั้ง ----------------------------
             Imgproc.filter2D(imgRotation, imgRotation, -1, kernel);
-            api.saveMatImage(imgRotation, "ImgBackup_" + Inputpaper + ".png");
+            Imgproc.resize(imgRotation, imgBackup, new Size(640, 640));
+
+            api.saveMatImage(imgBackup, "ImgBackup_" + Inputpaper + ".png");
 
             // ------------- imgGray--------------------
             Mat imgGray = new Mat();
