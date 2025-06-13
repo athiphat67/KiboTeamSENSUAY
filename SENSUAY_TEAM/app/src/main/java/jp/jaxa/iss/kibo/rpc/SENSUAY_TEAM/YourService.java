@@ -590,6 +590,9 @@ public class YourService extends KiboRpcService {
                 break;
 
         }
+
+        CaptureImgCheckBeforetakTargetItemsSnapshot();
+
         api.takeTargetItemSnapshot();
     }
 
@@ -671,6 +674,24 @@ public class YourService extends KiboRpcService {
         }
 
         return numpaper;
+    }
+
+    private void CaptureImgCheckBeforetakTargetItemsSnapshot() {
+
+        double[][] cameraParam = api.getNavCamIntrinsics();
+
+        // สร้าง Mat สำหรับ cameraMatrix (3×3) และ dstMatrix (1×5) ด้วยชนิดข้อมูล double
+        Mat cameraMatrix = new Mat(3, 3, CvType.CV_64F);
+        Mat dstMatrix = new Mat(1, 5, CvType.CV_64F);
+        cameraMatrix.put(0, 0, cameraParam[0]);
+        dstMatrix.put(0, 0, cameraParam[1]);
+
+        Mat Cam = api.getMatNavCam();
+
+        Mat imgUndistort = new Mat();
+        Calib3d.undistort(Cam, imgUndistort, cameraMatrix, dstMatrix);
+
+        api.saveMatImage(imgUndistort, "imgCheckBeforeSnapShotTarget.png");
     }
 
 }
