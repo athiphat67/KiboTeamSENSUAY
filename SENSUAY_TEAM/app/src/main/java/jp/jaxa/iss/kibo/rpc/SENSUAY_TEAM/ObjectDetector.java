@@ -27,7 +27,7 @@ public class ObjectDetector {
 
     private static final String TAG = "ObjectDetector";
     private static final int INPUT_SIZE = 640; // ขนาดรูปภาพที่ป้อนเข้าโมเดล TFLite (เช่น 640x640)
-    private static final float CONFIDENCE_THRESHOLD = 0.7f; // ค่าความเชื่อมั่นขั้นต่ำ (0.0f - 1.0f)
+    private static final float CONFIDENCE_THRESHOLD = 0.5f; // ค่าความเชื่อมั่นขั้นต่ำ (0.0f - 1.0f)
     private static final float IOU_THRESHOLD = 0.45f;   // ค่า IOU สำหรับ Non-Maximum Suppression (0.0f - 1.0f)
 
     // *** โครงสร้างเอาต์พุตของโมเดล: [Batch, จำนวนฟีเจอร์ต่อการคาดการณ์, จำนวนการคาดการณ์] ***
