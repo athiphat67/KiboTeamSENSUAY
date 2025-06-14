@@ -2,6 +2,9 @@ package jp.jaxa.iss.kibo.rpc.SENSUAY_TEAM;
 
 import org.opencv.core.Mat;
 
+import gov.nasa.arc.astrobee.Kinematics;
+import gov.nasa.arc.astrobee.types.Quaternion;
+
 /**
  * A data class to hold all relevant information from a single paper capture event.
  * This includes the processed image, success status, and pose data (rvec, tvec).
@@ -18,19 +21,23 @@ public class DataPaper {
     private int arucoId;
     private double[] rvec;
     private double[] tvec;
+    private Kinematics posNow;
+    private Quaternion quaternionNow;
 
     // --- Constructors ---
 
     /**
      * The main constructor for a successful capture event.
      */
-    public DataPaper(Mat captureImage, Mat backupImage, boolean isSuccess, int paperNumber, int arucoId, double[] rvec, double[] tvec) {
+    public DataPaper(Mat captureImage, Mat backupImage, boolean isSuccess, int paperNumber, int arucoId, double[] rvec, double[] tvec, Kinematics pos, Quaternion qnow) {
         this.captureImage = captureImage;
         this.backupImage = backupImage;
         this.isSuccess = isSuccess;
         this.paperNumber = paperNumber;
         this.arucoId = arucoId;
         this.targetItem = "";
+        this.posNow = pos;
+        this.quaternionNow = qnow;
 
         // Ensure rvec is a 3-element array
         if (rvec != null && rvec.length == 3) {
@@ -47,6 +54,7 @@ public class DataPaper {
         } else {
             this.tvec = new double[]{0, 0, 0};
         }
+
     }
 
     /**
@@ -142,6 +150,22 @@ public class DataPaper {
 
     public void setBackupImage(Mat backupImage) {
         this.backupImage = backupImage;
+    }
+
+    public Kinematics getPosNow() {
+        return posNow;
+    }
+
+    public void setPosNow(Kinematics posNow) {
+        this.posNow = posNow;
+    }
+
+    public Quaternion getQuaternionNow() {
+        return quaternionNow;
+    }
+
+    public void setQuaternionNow(Quaternion quaternionNow) {
+        this.quaternionNow = quaternionNow;
     }
 
     /**
