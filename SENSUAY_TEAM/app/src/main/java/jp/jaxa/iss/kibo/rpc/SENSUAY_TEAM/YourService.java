@@ -241,7 +241,9 @@ public class YourService extends KiboRpcService {
 
         //move to targetArea
         int NumberResultPaper = FindPaperOfTargetItems();
+        Log.i("MoveToTargetArea", "NUmberResultePaper: " + NumberResultPaper);
         DataPaper resultPaper = ListDataPaper.get(NumberResultPaper - 1);
+        Log.i("MoveToTargetArea", "resultPaper :" + resultPaper.getPaperNumber());
         try {
             moveToReportArea(NumberResultPaper, resultPaper);
         } catch (IOException e) {
@@ -264,28 +266,42 @@ public class YourService extends KiboRpcService {
         double[] tvec_array = new double[3];
         Mat imgRotation = new Mat(); // Declare outside loop to retain value
         Mat imgBackup = new Mat(); // Declare imgBackup here as well
+        float ARUCO_LEN = 0.05f;
+
+        // rvec tvec
+        // เตรียมค่าสำหรับ sharpen kernel
+
+        float[] data = {0, -1, 0, -1, 5, -1, 0, -1, 0};
+        Mat kernel = new Mat(3, 3, CvType.CV_32F);
+        kernel.put(0, 0, data);
+
+        // ดึงค่าพารามิเตอร์กล้องจาก API
+        double[][] cameraParam = api.getNavCamIntrinsics();
+
+        // สร้าง Mat สำหรับ cameraMatrix (3×3) และ dstMatrix (1×5) ด้วยชนิดข้อมูล double
+        Mat cameraMatrix = new Mat(3, 3, CvType.CV_64F);
+        Mat dstMatrix = new Mat(1, 5, CvType.CV_64F);
+        cameraMatrix.put(0, 0, cameraParam[0]);
+        dstMatrix.put(0, 0, cameraParam[1]);
+
+        Mat Cam = api.getMatNavCam();
+        Dictionary Dict = Aruco.getPredefinedDictionary(Aruco.DICT_5X5_250);
+
+        Mat keepids = new Mat();
+        List<Mat> keepcorners = new ArrayList<>();
+
+        Mat keeprvecs = new Mat();
+        Mat keeptvecs = new Mat();
+
+        Aruco.detectMarkers(Cam, Dict, keepcorners, keepids);
+        Aruco.estimatePoseSingleMarkers(keepcorners, ARUCO_LEN, cameraMatrix, dstMatrix, keeprvecs, keeptvecs);
+
+        keeprvecs.get(0,0,rvec_array);
+        keeptvecs.get(0,0,tvec_array);
 
         // ---------------------------- start setup field ----------------------------
         while (start < stop) {
-
-            float ARUCO_LEN = 0.05f;
             start++;
-
-            // เตรียมค่าสำหรับ sharpen kernel
-            float[] data = {0, -1, 0, -1, 5, -1, 0, -1, 0};
-            Mat kernel = new Mat(3, 3, CvType.CV_32F);
-            kernel.put(0, 0, data);
-
-            // ดึงค่าพารามิเตอร์กล้องจาก API
-            double[][] cameraParam = api.getNavCamIntrinsics();
-
-            // สร้าง Mat สำหรับ cameraMatrix (3×3) และ dstMatrix (1×5) ด้วยชนิดข้อมูล double
-            Mat cameraMatrix = new Mat(3, 3, CvType.CV_64F);
-            Mat dstMatrix = new Mat(1, 5, CvType.CV_64F);
-            cameraMatrix.put(0, 0, cameraParam[0]);
-            dstMatrix.put(0, 0, cameraParam[1]);
-
-            Mat Cam = api.getMatNavCam();
 
             Mat imgUndistort = new Mat();
             Calib3d.undistort(Cam, imgUndistort, cameraMatrix, dstMatrix);
@@ -309,7 +325,6 @@ public class YourService extends KiboRpcService {
             }
 
             // สร้าง ArUco dictionary และตัวเก็บผลลัพธ์
-            Dictionary Dict = Aruco.getPredefinedDictionary(Aruco.DICT_5X5_250);
             Mat ids = new Mat();
             List<Mat> corners = new ArrayList<>();
 
@@ -340,8 +355,6 @@ public class YourService extends KiboRpcService {
             Mat rvecs = new Mat();
             Mat tvecs = new Mat();
             Aruco.estimatePoseSingleMarkers(CornersList, ARUCO_LEN, cameraMatrix, dstMatrix, rvecs, tvecs);
-            rvecs.get(0, 0, rvec_array);
-            tvecs.get(0, 0, tvec_array);
 
             // สร้าง MatOfPoint2f เพื่อแปลง selectedCorner → Point[]
             MatOfPoint2f cornerPoints = new MatOfPoint2f(selectedCorner);
@@ -591,25 +604,46 @@ public class YourService extends KiboRpcService {
     }
 
     private void reportArea1(double[] tvec, Point position) throws IOException {
+        // เริ่มต้นเมธอด
+        Log.i("ReportArea1", "Starting reportArea1 method.");
+
         double x0 = tvec[0];
         double y0 = tvec[1];
         double z0 = tvec[2];
+        // แสดงค่า x0, y0, z0
+        Log.i("ReportArea1", "tvec (x0, y0, z0): " + x0 + ", " + y0 + ", " + z0);
+
         double x1 = position.getX();
         double y1 = position.getY();
         double z1 = position.getZ();
+        // แสดงค่า x1, y1, z1
+        Log.i("ReportArea1", "Position (x1, y1, z1): " + x1 + ", " + y1 + ", " + z1);
+
         boolean check = moveToArea(targetPositions.get(MissionTarget.AREA1_POINT2), targetOrientations.get(MissionTarget.AREA1_POINT2));
         Point reportPoint = new Point(x1 + x0, -9.83, z1 + z0);
         boolean reportPosition =  moveToArea(reportPoint, targetOrientations.get(MissionTarget.AREA1_POINT2));
 
+        // แสดงตำแหน่งของ reportPoint
+        Log.i("ReportArea1", "Report Point - X: " + reportPoint.getX() + ", Y: " + reportPoint.getY() + ", Z: " + reportPoint.getZ());
+        // แจ้งว่าการเดินทางเสร็จสิ้น
+        Log.i("ReportArea1", "Movement to report point completed for Area 1.");
     }
 
     private void reportArea2(double[] tvec, Point position) throws IOException {
+        // เริ่มต้นเมธอด
+        Log.i("ReportArea2", "Starting reportArea2 method.");
+
         double x0 = tvec[0];
         double y0 = tvec[1];
         double z0 = tvec[2];
+        // แสดงค่า x0, y0, z0
+        Log.i("ReportArea2", "tvec (x0, y0, z0): " + x0 + ", " + y0 + ", " + z0);
+
         double x2 = position.getX();
         double y2 = position.getY();
         double z2 = position.getZ();
+        // แสดงค่า x2, y2, z2
+        Log.i("ReportArea2", "Position (x2, y2, z2): " + x2 + ", " + y2 + ", " + z2);
 
         double yTvec = y2 - y0;
         double xTvec ;
@@ -620,15 +654,28 @@ public class YourService extends KiboRpcService {
 
         Point reportPoint = new Point(xTvec, yTvec, 4.66);
         boolean reportPosition =  moveToArea(reportPoint, targetOrientations.get(MissionTarget.AREA23_CAPTURE));
+
+        // แสดงตำแหน่งของ reportPoint
+        Log.i("ReportArea2", "Report Point - X: " + reportPoint.getX() + ", Y: " + reportPoint.getY() + ", Z: " + reportPoint.getZ());
+        // แจ้งว่าการเดินทางเสร็จสิ้น
+        Log.i("ReportArea2", "Movement to report point completed for Area 2.");
     }
 
     private void reportArea3(double[] tvec, Point position) throws IOException {
+        // เริ่มต้นเมธอด
+        Log.i("ReportArea3", "Starting reportArea3 method.");
+
         double x0 = tvec[0];
         double y0 = tvec[1];
         double z0 = tvec[2];
+        // แสดงค่า x0, y0, z0
+        Log.i("ReportArea3", "tvec (x0, y0, z0): " + x0 + ", " + y0 + ", " + z0);
+
         double x3 = position.getX();
         double y3 = position.getY();
         double z3 = position.getZ();
+        // แสดงค่า x3, y3, z3
+        Log.i("ReportArea3", "Position (x3, y3, z3): " + x3 + ", " + y3 + ", " + z3);
 
         double yTvec = y3 + y0;
         double xTvec ;
@@ -638,19 +685,31 @@ public class YourService extends KiboRpcService {
         else { xTvec = x3; }
 
         Point reportPoint = new Point(xTvec, yTvec, 4.66);
-        boolean check = moveToArea(targetPositions.get(MissionTarget.AREA23_CAPTURE), targetOrientations.get(MissionTarget.AREA23_CAPTURE));
-        if (check) {
-            boolean reportPosition = moveToArea(reportPoint, targetOrientations.get(MissionTarget.AREA23_CAPTURE));
-        }
+
+        boolean reportPosition = moveToArea(reportPoint, targetOrientations.get(MissionTarget.AREA23_CAPTURE));
+
+        // แสดงตำแหน่งของ reportPoint
+        Log.i("ReportArea3", "Report Point - X: " + reportPoint.getX() + ", Y: " + reportPoint.getY() + ", Z: " + reportPoint.getZ());
+        // แจ้งว่าการเดินทางเสร็จสิ้น
+        Log.i("ReportArea3", "Movement to report point completed for Area 3.");
     }
 
     private void reportArea4(double[] tvec, Point position) throws IOException {
+        // เริ่มต้นเมธอด
+        Log.i("ReportArea4", "Starting reportArea4 method.");
+
         double x0 = tvec[0];
         double y0 = tvec[1];
         double z0 = tvec[2];
+        // แสดงค่า x0, y0, z0
+        Log.i("ReportArea4", "tvec (x0, y0, z0): " + x0 + ", " + y0 + ", " + z0);
+
         double x4 = position.getX();
         double y4 = position.getY();
         double z4 = position.getZ();
+        // แสดงค่า x4, y4, z4
+        Log.i("ReportArea4", "Position (x4, y4, z4): " + x4 + ", " + y4 + ", " + z4);
+
         double yTvec ;
         double zTvec ;
 
@@ -662,10 +721,13 @@ public class YourService extends KiboRpcService {
         else if (y4 < y0) { yTvec = y4 + y0; }
         else {yTvec = y4;}
 
-        boolean check = moveToArea(targetPositions.get(MissionTarget.AREA4_CAPTURE), targetOrientations.get(MissionTarget.AREA4_CAPTURE));
         Point reportPoint = new Point(10.56, yTvec, zTvec);
         boolean reportPosition = moveToArea(reportPoint, targetOrientations.get(MissionTarget.AREA4_CAPTURE));
 
+        // แสดงตำแหน่งของ reportPoint
+        Log.i("ReportArea4", "Report Point - X: " + reportPoint.getX() + ", Y: " + reportPoint.getY() + ", Z: " + reportPoint.getZ());
+        // แจ้งว่าการเดินทางเสร็จสิ้น
+        Log.i("ReportArea4", "Movement to report point completed for Area 4.");
     }
 
     public void moveToReportArea(int Area_num,DataPaper dataPaper) throws IOException {
