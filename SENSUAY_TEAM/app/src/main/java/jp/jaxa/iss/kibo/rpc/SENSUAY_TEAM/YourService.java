@@ -123,8 +123,8 @@ public class YourService extends KiboRpcService {
         // move astrobee ไปที่จุดบน oasis 2 พร้อมหมุน astrobee แล้วถ่ายภาพ
         try {
             Log.i("Mission", "Moving to Area 1 Capture Position...");
-            moveToArea(targetPositions.get(MissionTarget.AREA1_POINT2), targetOrientations.get(MissionTarget.AREA1_POINT2));
-            DataPaper result1 = CapturePaper(1, targetOrientations.get(MissionTarget.AREA1_POINT2));
+            moveToArea(targetPositions.get(MissionTarget.PLAN2_CAP_A1), targetOrientations.get(MissionTarget.PLAN2_CAP_A1));
+            DataPaper result1 = CapturePaper(1, targetOrientations.get(MissionTarget.PLAN2_CAP_A1));
 
             Mat imgResult = result1.getCaptureImage();
             api.saveMatImage(imgResult, "imgArea_"+ 1 +".png");
@@ -147,13 +147,13 @@ public class YourService extends KiboRpcService {
             // delay astrobee ค้างไว้ 4000 millisecond==4 sec เพื่อเช็คให้ชัวร์ว่านิ่งจริงๆแล้วค่อยถ่ายภาพ
             SystemClock.sleep(3000);
 
-            DataPaper result2 = CapturePaper(2, targetOrientations.get(MissionTarget.AREA23_CAPTURE));
+            DataPaper result2 = CapturePaper(2, targetOrientations.get(MissionTarget.PLAN2_CAP_A23));
             ListDataPaper.add(result2);
             Mat imgResult2 = result2.getCaptureImage();
             api.saveMatImage(imgResult2, "imgArea_"+ 2 +".png");
             resultList.add(detector.processImage(result2));
 
-            DataPaper result3 = CapturePaper(3, targetOrientations.get(MissionTarget.AREA23_CAPTURE));
+            DataPaper result3 = CapturePaper(3, targetOrientations.get(MissionTarget.PLAN2_CAP_A23));
             ListDataPaper.add(result3);
             Mat imgResult3 = result3.getCaptureImage();
             api.saveMatImage(imgResult3, "imgArea_"+ 3 +".png");
@@ -173,7 +173,7 @@ public class YourService extends KiboRpcService {
 
             SystemClock.sleep(2000);
 
-            DataPaper result4 = CapturePaper(4, targetOrientations.get(MissionTarget.AREA4_CAPTURE));
+            DataPaper result4 = CapturePaper(4, targetOrientations.get(MissionTarget.PLAN2_CAP_A4));
             ListDataPaper.add(result4);
             Mat imgResult4 = result4.getCaptureImage();
             api.saveMatImage(imgResult4, "imgArea_"+ 4 +".png");
@@ -193,7 +193,7 @@ public class YourService extends KiboRpcService {
 
             SystemClock.sleep(2000);
 
-            DataPaper result5 = CapturePaper(5, targetOrientations.get(MissionTarget.ASTRONAUT_INTERACTION_POS));
+            DataPaper result5 = CapturePaper(5, targetOrientations.get(MissionTarget.PLAN2_ASTRO_POS));
             ListDataPaper.add(result5);
             Mat imgResult5 = result5.getCaptureImage();
             api.saveMatImage(imgResult5, "imgArea_"+ 5 +".png");
