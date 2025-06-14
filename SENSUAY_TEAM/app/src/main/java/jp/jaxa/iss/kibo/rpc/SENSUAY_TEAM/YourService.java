@@ -713,8 +713,8 @@ public class YourService extends KiboRpcService {
         double yTvec ;
         double zTvec ;
 
-        if (z4 < z0) { zTvec = z0 + z4; }
-        else if ( z4 > z0) { zTvec = z0 - z4;}
+        if (z4 < z0) { zTvec = z4 + z0; }
+        else if ( z4 > z0) { zTvec = z4 - z0;}
         else { zTvec = z4; }
 
         if ( y4 > y0) { yTvec = y4 - y0; }
