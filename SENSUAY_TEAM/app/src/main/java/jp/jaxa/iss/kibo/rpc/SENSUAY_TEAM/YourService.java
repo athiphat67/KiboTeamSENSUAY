@@ -722,7 +722,7 @@ public class YourService extends KiboRpcService {
         else {yTvec = y4;}
 
         Point reportPoint = new Point(10.56, yTvec, zTvec);
-        boolean reportPosition = moveToArea(reportPoint, targetOrientations.get(MissionTarget.AREA4_CAPTURE));
+        boolean reportPosition = moveToArea(reportPoint, targetOrientations.get(MissionTarget.AREA4_TARGET));
 
         // แสดงตำแหน่งของ reportPoint
         Log.i("ReportArea4", "Report Point - X: " + reportPoint.getX() + ", Y: " + reportPoint.getY() + ", Z: " + reportPoint.getZ());
