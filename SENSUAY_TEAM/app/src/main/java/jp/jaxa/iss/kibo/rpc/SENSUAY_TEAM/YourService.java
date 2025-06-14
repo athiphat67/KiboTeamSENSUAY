@@ -43,14 +43,10 @@ public class YourService extends KiboRpcService {
 
     // enum class ระบุชื่อจุด
     private enum MissionTarget {
-        AREA1_POINT1,
-        AREA1_POINT2,
-        AREA2_ENTRANCE,
-        AREA23_CAPTURE,
-        AREA3_EXIT,
-        AREA4_CAPTURE,
-        AREA4_TARGET,
-        ASTRONAUT_INTERACTION_POS
+        PLAN2_CAP_A1,
+        PLAN2_CAP_A23,
+        PLAN2_CAP_A4,
+        PLAN2_ASTRO_POS
     }
 
     // Maps เก็บตำแหน่งและทิศทาง
@@ -103,6 +99,27 @@ public class YourService extends KiboRpcService {
         return new Quaternion((float) x, (float) y, (float) z, (float) w);
     }
 
+    private Quaternion eulerToQuaternion(List<Double> degree) {
+        double yaw = Math.toRadians(degree.get(0));
+        double pitch = Math.toRadians(degree.get(1));
+        double roll = Math.toRadians(degree.get(2));
+
+        double cy = Math.cos(yaw * 0.5);
+        double sy = Math.sin(yaw * 0.5);
+        double cp = Math.cos(pitch * 0.5);
+        double sp = Math.sin(pitch * 0.5);
+        double cr = Math.cos(roll * 0.5);
+        double sr = Math.sin(roll * 0.5);
+
+        double w = cr * cp * cy + sr * sp * sy;
+        double x = sr * cp * cy - cr * sp * sy;
+        double y = cr * sp * cy + sr * cp * sy;
+        double z = cr * cp * sy - sr * sp * cy;
+
+        return new Quaternion((float) x, (float) y, (float) z, (float) w);
+    }
+
+
     @Override
     protected void runPlan1() {
         // StartMissions
@@ -110,39 +127,26 @@ public class YourService extends KiboRpcService {
 
         // Add จุดใหม่ไปที่ enum ของชื่อจุดที่สร้างไว้
         // Position (x,y,x)
-        targetPositions.put(MissionTarget.AREA1_POINT1, new Point(10.9d, -9.92284d, 5.195d)); // area1 : point 1
-        targetPositions.put(MissionTarget.AREA1_POINT2, new Point(11.175, -10.03, 5.245d)); // area1 : point2 (capture)
-        targetPositions.put(MissionTarget.AREA2_ENTRANCE, new Point(11.150, -8.55, 5.115d)); // area2 : move out oasis2's point
-        targetPositions.put(MissionTarget.AREA23_CAPTURE, new Point(11.150, -8.45, 4.912d)); // area2,3 : capture
-        targetPositions.put(MissionTarget.AREA3_EXIT, new Point(11.150, -8.35, 5.115d)); // area3 : move out oasis3's point
-        targetPositions.put(MissionTarget.AREA4_CAPTURE, new Point(11.1d, -6.875, 4.8d)); // area4 : point4 (capture)
-        targetPositions.put(MissionTarget.ASTRONAUT_INTERACTION_POS, new Point(11.143d, -6.7607d, 4.9654d)); // astroPoint ใน moveToAstronaut
+        targetPositions.put(MissionTarget.PLAN2_CAP_A1, new Point(11.15,-9.5,4.9645));
+        targetPositions.put(MissionTarget.PLAN2_CAP_A23, new Point(11.15,-8.45, 4.9645));
+        targetPositions.put(MissionTarget.PLAN2_CAP_A4, new Point(11.143, -6.8525, 4.9645));
+        targetPositions.put(MissionTarget.PLAN2_ASTRO_POS, new Point(11.143, -6.8525, 4.9645));
 
         // Add องศารอบแกนหมุนไปที่ชื่อจุด
         // Quaternion (pitch,roll,yaw)
-        targetOrientations.put(MissionTarget.AREA1_POINT1, eulerToQuaternion(0, 0, -90)); // deg area1
-        targetOrientations.put(MissionTarget.AREA1_POINT2, eulerToQuaternion(0, 0, -90)); // deg area1 capture
-        targetOrientations.put(MissionTarget.AREA2_ENTRANCE, eulerToQuaternion(90, 0, 0)); // deg area2
-        targetOrientations.put(MissionTarget.AREA23_CAPTURE, eulerToQuaternion(90, 0, 0)); // deg area2,3 capture
-        targetOrientations.put(MissionTarget.AREA3_EXIT, eulerToQuaternion(-10, 0, 180)); //  deg area3
-        targetOrientations.put(MissionTarget.AREA4_CAPTURE, eulerToQuaternion(-10, 0, 180)); // deg area4 capture
-        targetOrientations.put(MissionTarget.AREA4_TARGET, eulerToQuaternion(0,0,180));
-        targetOrientations.put(MissionTarget.ASTRONAUT_INTERACTION_POS, eulerToQuaternion(0, 0, 90)); // astroQ ใน moveToAstronaut
+        targetOrientations.put(MissionTarget.PLAN2_CAP_A1, eulerToQuaternion(-10, 0,-80));
+        targetOrientations.put(MissionTarget.PLAN2_CAP_A23, eulerToQuaternion(90,0,0));
+        targetOrientations.put(MissionTarget.PLAN2_CAP_A4, eulerToQuaternion(-5,0,180));
+        targetOrientations.put(MissionTarget.PLAN2_ASTRO_POS, eulerToQuaternion(0,0,90));
 
-        // move to area 1
-        // move astrobee ไปที่จุดที่ 1
-        try {
-            Log.i("Mission", "Moving to Area 1");
-            moveToArea(targetPositions.get(MissionTarget.AREA1_POINT1), targetOrientations.get(MissionTarget.AREA1_POINT1));;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+
 
         // move astrobee ไปที่จุดบน oasis 2 พร้อมหมุน astrobee แล้วถ่ายภาพ
         try {
             Log.i("Mission", "Moving to Area 1 Capture Position...");
             moveToArea(targetPositions.get(MissionTarget.AREA1_POINT2), targetOrientations.get(MissionTarget.AREA1_POINT2));
             DataPaper result1 = CapturePaper(1, targetOrientations.get(MissionTarget.AREA1_POINT2));
+
             Mat imgResult = result1.getCaptureImage();
             api.saveMatImage(imgResult, "imgArea_"+ 1 +".png");
             ListDataPaper.add(result1);
@@ -154,24 +158,15 @@ public class YourService extends KiboRpcService {
             e.printStackTrace();
         }
 
-        // move to area 2
-        // move astrobee ไปที่ oasis 2 (ก่อนจะเคลื่อนที่ตามแนวแกน -z เพื่อเข้าไปถ่ายรูป)
-        try {
-            Log.i("Mission", "Moving in of Oasis 2...");
-            moveToArea(targetPositions.get(MissionTarget.AREA2_ENTRANCE), targetOrientations.get(MissionTarget.AREA2_ENTRANCE));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
         // area 2,3 capture
         // move astrobee ไปที่จุดกึ่งกลางระหว่าง oasis และ เคลื่อนที่ขึ้นตามแนวแกน -z เพื่อถ่ายรูปห่างจากระนาบเป็นระยา ~115cm
         try {
             Log.i("Mission", "Moving to Area 2,3 Capture Position...");
-            moveToArea(targetPositions.get(MissionTarget.AREA23_CAPTURE), targetOrientations.get(MissionTarget.AREA23_CAPTURE));
+            moveToArea(targetPositions.get(MissionTarget.PLAN2_CAP_A23), targetOrientations.get(MissionTarget.PLAN2_CAP_A23));
             ObjectDetector detector = new ObjectDetector(this);
 
             // delay astrobee ค้างไว้ 4000 millisecond==4 sec เพื่อเช็คให้ชัวร์ว่านิ่งจริงๆแล้วค่อยถ่ายภาพ
-            SystemClock.sleep(4000);
+            SystemClock.sleep(3000);
 
             DataPaper result2 = CapturePaper(2, targetOrientations.get(MissionTarget.AREA23_CAPTURE));
             ListDataPaper.add(result2);
@@ -189,19 +184,12 @@ public class YourService extends KiboRpcService {
             e.printStackTrace();
         }
 
-        // move astrobee ออกจาก oasis 3 (*อาจจะต้องแก้ เดี๋ยวดูก่อน)
-        try {
-            Log.i("Mission", "Moving out of Oasis 3...");
-            moveToArea(targetPositions.get(MissionTarget.AREA3_EXIT), targetOrientations.get(MissionTarget.AREA3_EXIT));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
 
         // move to area 4
         // move astrobee เข้า area 4 (ยังอยู่ใน oasis 4) แล้วกดกล้องลง ~10 degree (ลองไปดูที่ orientation)
         try {
             Log.i("Mission", "Moving to Area 4 Capture Position...");
-            moveToArea(targetPositions.get(MissionTarget.AREA4_CAPTURE), targetOrientations.get(MissionTarget.AREA4_CAPTURE));
+            moveToArea(targetPositions.get(MissionTarget.PLAN2_CAP_A4), targetOrientations.get(MissionTarget.PLAN2_CAP_A4));
             ObjectDetector detector = new ObjectDetector(this);
 
             SystemClock.sleep(2000);
@@ -219,12 +207,12 @@ public class YourService extends KiboRpcService {
         // move to astronaut
         try {
             Log.i("Mission", "Moving to Astronaut Interaction Position...");
-            moveToArea(targetPositions.get(MissionTarget.ASTRONAUT_INTERACTION_POS), targetOrientations.get(MissionTarget.ASTRONAUT_INTERACTION_POS));
+            moveToArea(targetPositions.get(MissionTarget.PLAN2_ASTRO_POS), targetOrientations.get(MissionTarget.PLAN2_ASTRO_POS));
 
             ReportAllArea(resultList);
             api.reportRoundingCompletion();
 
-            SystemClock.sleep(5000);
+            SystemClock.sleep(2000);
 
             DataPaper result5 = CapturePaper(5, targetOrientations.get(MissionTarget.ASTRONAUT_INTERACTION_POS));
             ListDataPaper.add(result5);
@@ -631,9 +619,9 @@ public class YourService extends KiboRpcService {
         // แสดงค่า x1, y1, z1
         Log.i("ReportArea1", "Position (x1, y1, z1): " + x1 + ", " + y1 + ", " + z1);
 
-        boolean check = moveToArea(targetPositions.get(MissionTarget.AREA1_POINT2), targetOrientations.get(MissionTarget.AREA1_POINT2));
+        boolean check = moveToArea(targetPositions.get(MissionTarget.PLAN2_CAP_A1), targetOrientations.get(MissionTarget.PLAN2_CAP_A1));
         Point reportPoint = new Point(x1 + x0, -9.83, z1 + z0);
-        boolean reportPosition =  moveToArea(reportPoint, targetOrientations.get(MissionTarget.AREA1_POINT2));
+        boolean reportPosition =  moveToArea(reportPoint, targetOrientations.get(MissionTarget.PLAN2_CAP_A1));
 
         // แสดงตำแหน่งของ reportPoint
         Log.i("ReportArea1", "Report Point - X: " + reportPoint.getX() + ", Y: " + reportPoint.getY() + ", Z: " + reportPoint.getZ());
@@ -665,7 +653,7 @@ public class YourService extends KiboRpcService {
         else { xTvec = x2; }
 
         Point reportPoint = new Point(xTvec, yTvec, 4.66);
-        boolean reportPosition =  moveToArea(reportPoint, targetOrientations.get(MissionTarget.AREA23_CAPTURE));
+        boolean reportPosition =  moveToArea(reportPoint, targetOrientations.get(MissionTarget.PLAN2_CAP_A23));
 
         // แสดงตำแหน่งของ reportPoint
         Log.i("ReportArea2", "Report Point - X: " + reportPoint.getX() + ", Y: " + reportPoint.getY() + ", Z: " + reportPoint.getZ());
@@ -698,7 +686,7 @@ public class YourService extends KiboRpcService {
 
         Point reportPoint = new Point(xTvec, yTvec, 4.66);
 
-        boolean reportPosition = moveToArea(reportPoint, targetOrientations.get(MissionTarget.AREA23_CAPTURE));
+        boolean reportPosition = moveToArea(reportPoint, targetOrientations.get(MissionTarget.PLAN2_CAP_A23));
 
         // แสดงตำแหน่งของ reportPoint
         Log.i("ReportArea3", "Report Point - X: " + reportPoint.getX() + ", Y: " + reportPoint.getY() + ", Z: " + reportPoint.getZ());
@@ -734,7 +722,7 @@ public class YourService extends KiboRpcService {
         else {yTvec = y4;}
 
         Point reportPoint = new Point(10.56, yTvec, zTvec);
-        boolean reportPosition = moveToArea(reportPoint, targetOrientations.get(MissionTarget.AREA4_TARGET));
+        boolean reportPosition = moveToArea(reportPoint, targetOrientations.get(MissionTarget.PLAN2_CAP_A4));
 
         // แสดงตำแหน่งของ reportPoint
         Log.i("ReportArea4", "Report Point - X: " + reportPoint.getX() + ", Y: " + reportPoint.getY() + ", Z: " + reportPoint.getZ());
@@ -745,16 +733,16 @@ public class YourService extends KiboRpcService {
     public void moveToReportArea(int Area_num,DataPaper dataPaper) throws IOException {
         switch (Area_num) {
             case 1:
-                reportArea1(dataPaper.getTvec(), targetPositions.get(MissionTarget.AREA1_POINT2));
+                reportArea1(dataPaper.getTvec(), targetPositions.get(MissionTarget.PLAN2_CAP_A1));
                 break;
             case 2:
-                reportArea2(dataPaper.getTvec(), targetPositions.get(MissionTarget.AREA23_CAPTURE));
+                reportArea2(dataPaper.getTvec(), targetPositions.get(MissionTarget.PLAN2_CAP_A23));
                 break;
             case 3:
-                reportArea3(dataPaper.getTvec(), targetPositions.get(MissionTarget.AREA23_CAPTURE));
+                reportArea3(dataPaper.getTvec(), targetPositions.get(MissionTarget.PLAN2_CAP_A23));
                 break;
             case 4:
-                reportArea4(dataPaper.getTvec(), targetPositions.get(MissionTarget.AREA4_CAPTURE));
+                reportArea4(dataPaper.getTvec(), targetPositions.get(MissionTarget.PLAN2_CAP_A4));
                 break;
         }
 
