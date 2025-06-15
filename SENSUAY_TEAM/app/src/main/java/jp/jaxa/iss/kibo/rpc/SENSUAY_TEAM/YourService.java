@@ -113,7 +113,7 @@ public class YourService extends KiboRpcService {
 
         // Add องศารอบแกนหมุนไปที่ชื่อจุด
         // Quaternion (pitch,roll,yaw)
-        targetOrientations.put(MissionTarget.PLAN2_CAP_A1, eulerToQuaternion(-10, 0,-80));
+        targetOrientations.put(MissionTarget.PLAN2_CAP_A1, eulerToQuaternion(-15, 0,-80));
         targetOrientations.put(MissionTarget.PLAN2_CAP_A23, eulerToQuaternion(90,0,0));
         targetOrientations.put(MissionTarget.PLAN2_CAP_A4, eulerToQuaternion(-5,0,180));
         targetOrientations.put(MissionTarget.PLAN2_ASTRO_POS, eulerToQuaternion(0,0,90));
@@ -129,6 +129,8 @@ public class YourService extends KiboRpcService {
             Mat imgResult = result1.getCaptureImage();
             api.saveMatImage(imgResult, "imgArea_"+ 1 +".png");
             ListDataPaper.add(result1);
+
+            SystemClock.sleep(2000);
 
             ObjectDetector detector = new ObjectDetector(this);
             resultList.add(detector.processImage(result1));
