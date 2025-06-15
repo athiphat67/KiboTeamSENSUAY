@@ -2,6 +2,7 @@ package jp.jaxa.iss.kibo.rpc.SENSUAY_TEAM;
 
 import android.util.Log;
 
+
 import gov.nasa.arc.astrobee.Kinematics;
 import gov.nasa.arc.astrobee.types.Point;
 import gov.nasa.arc.astrobee.types.Quaternion;
@@ -36,6 +37,7 @@ public class DataPaper {
 
     // --- Constructors & Other Methods... ---
     public DataPaper(Mat captureImage, Mat backupImage, boolean isSuccess, int paperNumber, int arucoId, double[] rvec, double[] tvec, List<Mat> keepcorners ,Kinematics pos, Quaternion qnow) {
+
         this.captureImage = captureImage;
         this.backupImage = backupImage;
         this.isSuccess = isSuccess;
@@ -60,7 +62,6 @@ public class DataPaper {
         } else {
             this.tvec = new double[]{0, 0, 0};
         }
-
         this.pointPaper = calculateWorldPoint();
         logDataToLogcat("ShowDataPaper");
     }
@@ -312,4 +313,91 @@ public class DataPaper {
         // พิมพ์ Footer
         Log.i(tag, "===================================");
     }
+
+    public Point getArucoMarkerWorldPosition() {
+        if (this.rvec == null || this.tvec == null || this.rvec.length < 3 || this.tvec.length < 3 || this.posNow == null || this.quaternionNow == null) {
+            System.out.println("Error: Insufficient data to calculate Aruco marker world position.");
+            return null;
+        }
+
+        // 1. แปลง rvec และ tvec ให้เป็น Rotation Matrix (R_camera_marker)
+        Mat rotationVector = new MatOfDouble(rvec);
+        Mat translationVector = new MatOfDouble(tvec);
+        Mat rotationMatrix = new Mat(3, 3, CvType.CV_64FC1);
+        Calib3d.Rodrigues(rotationVector, rotationMatrix);
+
+        // 2. สร้าง Transformation Matrix จาก Camera ไปยัง Marker (T_camera_marker)
+        Mat T_camera_marker = Mat.eye(4, 4, CvType.CV_64FC1); // Identity matrix 4x4
+        // ใส่ Rotation Matrix
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                T_camera_marker.put(i, j, rotationMatrix.get(i, j));
+            }
+        }
+        // ใส่ Translation Vector
+        T_camera_marker.put(0, 3, tvec[0]);
+        T_camera_marker.put(1, 3, tvec[1]);
+        T_camera_marker.put(2, 3, tvec[2]);
+
+        // 3. สร้าง Transformation Matrix จาก World ไปยัง Camera (T_world_camera)
+        // ใช้ตำแหน่งและการหมุนของ Astrobee (กล้อง)
+        double camera_x = posNow.getPosition().getX();
+        double camera_y = posNow.getPosition().getY();
+        double camera_z = posNow.getPosition().getZ();
+
+        // แปลง Quaternion เป็น Rotation Matrix (R_world_camera)
+        double qx = quaternionNow.getX();
+        double qy = quaternionNow.getY();
+        double qz = quaternionNow.getZ();
+        double qw = quaternionNow.getW();
+
+        Mat R_world_camera = new Mat(3, 3, CvType.CV_64FC1);
+        R_world_camera.put(0, 0, 1 - 2*qy*qy - 2*qz*qz);
+        R_world_camera.put(0, 1, 2*qx*qy - 2*qz*qw);
+        R_world_camera.put(0, 2, 2*qx*qz + 2*qy*qw);
+
+        R_world_camera.put(1, 0, 2*qx*qy + 2*qz*qw);
+        R_world_camera.put(1, 1, 1 - 2*qx*qx - 2*qz*qz);
+        R_world_camera.put(1, 2, 2*qy*qz - 2*qx*qw);
+
+        R_world_camera.put(2, 0, 2*qx*qz - 2*qy*qw);
+        R_world_camera.put(2, 1, 2*qy*qz + 2*qx*qw);
+        R_world_camera.put(2, 2, 1 - 2*qx*qx - 2*qy*qy);
+
+        Mat T_world_camera = Mat.eye(4, 4, CvType.CV_64FC1);
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                T_world_camera.put(i, j, R_world_camera.get(i, j));
+            }
+        }
+        T_world_camera.put(0, 3, camera_x);
+        T_world_camera.put(1, 3, camera_y);
+        T_world_camera.put(2, 3, camera_z);
+
+
+        // 4. คำนวณ Transformation Matrix จาก World ไปยัง Marker (T_world_marker)
+        // T_world_marker = T_world_camera * T_camera_marker
+        Mat T_world_marker = new Mat(4, 4, CvType.CV_64FC1);
+        Core.gemm(T_world_camera, T_camera_marker, 1, new Mat(), 0, T_world_marker);
+
+        // 5. ดึงตำแหน่งของ Marker ในพิกัดโลก
+        double marker_world_x = T_world_marker.get(0, 3)[0];
+        double marker_world_y = T_world_marker.get(1, 3)[0];
+        double marker_world_z = T_world_marker.get(2, 3)[0];
+
+        // ปล่อย Mat ที่ไม่ใช้แล้วเพื่อป้องกัน Memory Leaks
+        rotationVector.release();
+        translationVector.release();
+        rotationMatrix.release();
+        T_camera_marker.release();
+        R_world_camera.release();
+        T_world_camera.release();
+        T_world_marker.release();
+
+        // สร้าง Point จาก Astrobee types หรือ OpenCV Point3f ตามที่คุณต้องการ
+        Point pt = new Point(marker_world_x, marker_world_y, marker_world_z);
+
+        return pt;
+    }
+
 }
