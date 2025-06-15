@@ -8,7 +8,6 @@ import gov.nasa.arc.astrobee.types.Point;
 import gov.nasa.arc.astrobee.types.Quaternion;
 
 import org.opencv.core.Mat;
-
 import java.util.Arrays;
 import java.util.List;
 
