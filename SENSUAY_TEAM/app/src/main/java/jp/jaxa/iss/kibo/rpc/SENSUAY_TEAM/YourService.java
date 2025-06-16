@@ -234,14 +234,12 @@ public class YourService extends KiboRpcService {
 
     private DataPaper CapturePaper(int paper, Quaternion quaternionNow) {
 
-        int stop = String.valueOf(paper).length(); // ถ้า paper=7 → stop=1, ถ้า paper=23 → stop=2
-        int start = 0;
         int Inputpaper = paper;
-        Mat warpedFlipped = new Mat();
-        int arucoid = -1;
+        Mat warpedFlipped;
+        int arucoid;
         double[] rvec_array = new double[3];
         double[] tvec_array = new double[3];
-        Mat imgRotation = new Mat(); // Declare outside loop to retain value
+        Mat imgRotation; // Declare outside loop to retain value
         Mat imgBackup = new Mat(); // Declare imgBackup here as well
         float ARUCO_LEN = 0.05f;
 
@@ -264,300 +262,308 @@ public class YourService extends KiboRpcService {
         Mat Cam = api.getMatNavCam();
         Dictionary Dict = Aruco.getPredefinedDictionary(Aruco.DICT_5X5_250);
 
+        // ------------------------- Img Undistort --------------------------------------------- //
+        Mat imgUndistort = new Mat();
+        Calib3d.undistort(Cam, imgUndistort, cameraMatrix, dstMatrix);
+
+        // --------------------------- keep Rvec Tvec ------------------------------------------//
+
         Mat keepids = new Mat();
         List<Mat> keepcorners = new ArrayList<>();
 
         Mat keeprvecs = new Mat();
         Mat keeptvecs = new Mat();
 
-        Aruco.detectMarkers(Cam, Dict, keepcorners, keepids);
-        Aruco.estimatePoseSingleMarkers(keepcorners, ARUCO_LEN, cameraMatrix, dstMatrix, keeprvecs, keeptvecs);
+        if (Inputpaper == 2) {
 
-        keeprvecs.get(0,0,rvec_array);
-        keeptvecs.get(0,0,tvec_array);
+            Mat leftImg = blackOutHalfImage(imgUndistort, 2);
+            Aruco.detectMarkers(leftImg, Dict, keepcorners, keepids);
+            Aruco.estimatePoseSingleMarkers(keepcorners, ARUCO_LEN, cameraMatrix, dstMatrix, keeprvecs, keeptvecs);
 
-        // ---------------------------- start setup field ----------------------------
-        while (start < stop) {
-            start++;
+        } else if (Inputpaper == 3) {
 
-            Mat imgUndistort = new Mat();
-            Calib3d.undistort(Cam, imgUndistort, cameraMatrix, dstMatrix);
+            Mat rightImg = blackOutHalfImage(imgUndistort, 3);
+            Aruco.detectMarkers(rightImg, Dict, keepcorners, keepids);
+            Aruco.estimatePoseSingleMarkers(keepcorners, ARUCO_LEN, cameraMatrix, dstMatrix, keeprvecs, keeptvecs);
 
-            // คราวนี้แบ่งกรอบภาพซ้าย/ขวา ตามค่า paper
-            int wCam = imgUndistort.cols();
-            int hCam = imgUndistort.rows();
-            int halfWidth = wCam / 2;
+        } else {
+            Aruco.detectMarkers(imgUndistort, Dict, keepcorners, keepids);
+            Aruco.estimatePoseSingleMarkers(keepcorners, ARUCO_LEN, cameraMatrix, dstMatrix, keeprvecs, keeptvecs);
 
-            // --------------------------------- แยกภาพ ที่ area 2 and area 3 ----------------------------------//
-            Mat imgCrop;
-            if (paper == 2) {
-                // ซ้าย
-                imgCrop = new Mat(imgUndistort, new Rect(0, 0, halfWidth, hCam));
-
-            } else if (paper == 3) {
-                // ขวา
-                imgCrop = new Mat(imgUndistort, new Rect(halfWidth, 0, wCam - halfWidth, hCam));
-            } else {
-                imgCrop = imgUndistort.clone(); // หรืออาจจะใช้ imgUndistort ได้เลย
-            }
-
-            // สร้าง ArUco dictionary และตัวเก็บผลลัพธ์
-            Mat ids = new Mat();
-            List<Mat> corners = new ArrayList<>();
-
-            // ---------------------------- Sharp ----------------------------
-            // สร้าง Mat เปล่าสำหรับเก็บภาพ sharpened และ undistort
-            Mat imgSharpned = new Mat();
-            Imgproc.filter2D(imgCrop, imgSharpned, -1, kernel);
-            // ---------------------------- Detect Markers ----------------------------
-            Aruco.detectMarkers(imgSharpned, Dict, corners, ids);
-
-            if (corners.isEmpty()) {
-                return new DataPaper(imgCrop, false, Inputpaper, -1);
-            }
-
-            arucoid = (int) ids.get(0, 0)[0];
-
-            // ---------------------------- Rotation Paper ----------------------------
-            int idx = 0;
-
-            // ดึง Mat ของมาร์กเกอร์ตัวแรก (1×4×2)
-            Mat selectedCorner = corners.get(idx);
-
-            // เตรียม List สำหรับ estimatePoseSingleMarkers
-            List<Mat> CornersList = new ArrayList<>();
-            CornersList.add(selectedCorner);
-
-            // เตรียมตัวเก็บ rvecs / tvecs
-            Mat rvecs = new Mat();
-            Mat tvecs = new Mat();
-            Aruco.estimatePoseSingleMarkers(CornersList, ARUCO_LEN, cameraMatrix, dstMatrix, rvecs, tvecs);
-
-            // สร้าง MatOfPoint2f เพื่อแปลง selectedCorner → Point[]
-            MatOfPoint2f cornerPoints = new MatOfPoint2f(selectedCorner);
-            org.opencv.core.Point[] cornerArray = cornerPoints.toArray();
-
-            // ---------------------------- คำนวณ pixel-to-meter ----------------------------
-            double pixelDistance1 = Core.norm(new MatOfPoint2f(cornerArray[0]), new MatOfPoint2f(cornerArray[1]));
-            double pixelDistance2 = Core.norm(new MatOfPoint2f(cornerArray[0]), new MatOfPoint2f(cornerArray[3]));
-            double pixelDistance3 = Core.norm(new MatOfPoint2f(cornerArray[1]), new MatOfPoint2f(cornerArray[2]));
-            double pixelDistance4 = Core.norm(new MatOfPoint2f(cornerArray[2]), new MatOfPoint2f(cornerArray[3]));
-            double pixelDistance = (pixelDistance1 + pixelDistance2 + pixelDistance3 + pixelDistance4) / 4;
-
-            double pixelToMRatio = pixelDistance / ARUCO_LEN;
-
-            // ---------------------------- คำนวณมุมหมุน (roll) ----------------------------
-            double xTL = cornerArray[0].x;
-            double yTL = cornerArray[0].y;
-            double xTR = cornerArray[1].x;
-            double yTR = cornerArray[1].y;
-
-            double roll_rad = Math.atan2(yTL - yTR, xTL - xTR);
-            double roll_deg = Math.toDegrees(roll_rad);
-
-            // ---------------------------- ดึงมุมทั้ง 4 ----------------------------
-            double[] TL = selectedCorner.get(0, 0);  // [x_TL, y_TL]
-            double[] TR = selectedCorner.get(0, 1);  // [x_TR, y_TR]
-            double[] BR = selectedCorner.get(0, 2);  // [x_BR, y_BR]
-            double[] BL = selectedCorner.get(0, 3);  // [x_BL, y_BL]
-
-            // ---------------------------- หาจุดศูนย์กลางของมาร์กเกอร์ ----------------------------
-            double center_x = (TL[0] + BR[0]) / 2.0;
-            double center_y = (TL[1] + BR[1]) / 2.0;
-
-            org.opencv.core.Point center = new org.opencv.core.Point(center_x, center_y);
-
-            // ---------------------------- สร้าง Rotation Matrix (2×3) ----------------------------
-            // ยังคงใช้ -2.0 ตามคำขอครั้งก่อน
-            Mat M = Imgproc.getRotationMatrix2D(center, roll_deg, -2.0);
-
-            // ---------------------------- คำนวณขนาดภาพปลายทางที่เหมาะสมหลังการหมุน ----------------------------
-            double originalWidth = imgSharpned.cols();
-            double originalHeight = imgSharpned.rows();
-
-            double absCos = Math.abs(Math.cos(Math.toRadians(roll_deg)));
-            double absSin = Math.abs(Math.sin(Math.toRadians(roll_deg)));
-
-            int newWidth = (int) Math.round(originalHeight * absSin + originalWidth * absCos);
-            int newHeight = (int) Math.round(originalHeight * absCos + originalWidth * absSin);
-
-            M.put(0, 2, M.get(0, 2)[0] + (newWidth / 2) - center_x);
-            M.put(1, 2, M.get(1, 2)[0] + (newHeight / 2) - center_y);
-
-            imgRotation = new Mat();
-            Imgproc.warpAffine(imgSharpned, imgRotation, M, new org.opencv.core.Size(newWidth, newHeight), Imgproc.INTER_LINEAR, Core.BORDER_CONSTANT, new Scalar(0, 0, 0));
-
-            // ---------------------------- นำ kernel มา sharpen ผลลัพธ์อีกครั้ง ----------------------------
-            Imgproc.filter2D(imgRotation, imgRotation, -1, kernel);
-
-            // ---------------------------- ส่วนที่เพิ่มเข้ามาสำหรับการซูม imgBackup 1.3 เท่า ----------------------------
-            // คำนวณจุดศูนย์กลางของ Aruco marker ในภาพ imgRotation
-            Mat tempImgGray = new Mat();
-            if (imgRotation.channels() == 3) {
-                Imgproc.cvtColor(imgRotation, tempImgGray, Imgproc.COLOR_BGR2GRAY);
-            } else {
-                imgRotation.copyTo(tempImgGray);
-            }
-
-            List<Mat> currentCorners = new ArrayList<>();
-            Mat currentIds = new Mat();
-            Aruco.detectMarkers(tempImgGray, Dict, currentCorners, currentIds);
-
-            if (!currentCorners.isEmpty()) {
-                Mat arucoCorner = currentCorners.get(0); // เอา Aruco marker ตัวแรก
-                // หาจุดศูนย์กลางของ Aruco marker ในภาพ imgRotation
-                double current_aruco_center_x = (arucoCorner.get(0, 0)[0] + arucoCorner.get(0, 2)[0]) / 2.0;
-                double current_aruco_center_y = (arucoCorner.get(0, 0)[1] + arucoCorner.get(0, 2)[1]) / 2.0;
-
-                // *** ปรับการคำนวณขนาด Crop สำหรับการซูม 1.3 เท่า ***
-                double zoomFactor = 1.3;
-                int targetOutputSize = 640; // ขนาดสุดท้ายของ imgBackup
-
-                int cropWidth = (int) Math.round(targetOutputSize / zoomFactor);
-                int cropHeight = (int) Math.round(targetOutputSize / zoomFactor);
-                // ตรวจสอบให้แน่ใจว่า cropWidth และ cropHeight เป็นคู่
-                cropWidth = (cropWidth % 2 == 0) ? cropWidth : cropWidth + 1;
-                cropHeight = (cropHeight % 2 == 0) ? cropHeight : cropHeight + 1;
-
-
-                // คำนวณตำแหน่งเริ่มต้นของการ Crop
-                int x = (int) (current_aruco_center_x - cropWidth / 2);
-                int y = (int) (current_aruco_center_y - cropHeight / 2);
-
-                // ตรวจสอบขอบเขตของการ Crop ไม่ให้เกินภาพ imgRotation
-                x = Math.max(0, x);
-                y = Math.max(0, y);
-
-                // ปรับขนาด cropWidth/Height ให้ไม่เกินขอบภาพ แต่พยายามรักษาสัดส่วน
-                int actualCropWidth = Math.min(cropWidth, imgRotation.cols() - x);
-                int actualCropHeight = Math.min(cropHeight, imgRotation.rows() - y);
-
-                // หากพื้นที่ Crop ที่เป็นไปได้เล็กกว่าที่คำนวณได้มาก ให้ถอยกลับไปใช้ขนาดเต็มแล้ว resize
-                if (actualCropWidth <= 0 || actualCropHeight <= 0 || actualCropWidth < (cropWidth * 0.8) || actualCropHeight < (cropHeight * 0.8)) {
-                    System.out.println("Warning: Crop area too small for 1.3x zoom or invalid dimensions. Falling back to normal resize for imgBackup.");
-                    Imgproc.resize(imgRotation, imgBackup, new Size(targetOutputSize, targetOutputSize), 0, 0, Imgproc.INTER_LINEAR);
-                } else {
-                    Rect cropRect = new Rect(x, y, actualCropWidth, actualCropHeight);
-                    Mat croppedImage = new Mat(imgRotation, cropRect);
-                    Imgproc.resize(croppedImage, imgBackup, new Size(targetOutputSize, targetOutputSize), 0, 0, Imgproc.INTER_LINEAR);
-                    croppedImage.release(); // ปล่อย Mat ที่ถูก Crop เพื่อประหยัดหน่วยความจำ
-                }
-            } else {
-                // ถ้าไม่พบ Aruco marker ใน imgRotation หลังการหมุน ก็ไม่สามารถซูมตาม marker ได้
-                // จึงใช้การ resize แบบเดิม
-                System.out.println("Warning: Aruco marker not found in imgRotation for zoom. Falling back to normal resize for imgBackup.");
-                Imgproc.resize(imgRotation, imgBackup, new Size(640, 640), 0, 0, Imgproc.INTER_LINEAR);
-            }
-            // --------------------------------------------------------------------------------------------------
-
-            api.saveMatImage(imgBackup, "ImgBackup_" + Inputpaper + ".png");
-
-            Mat imgGray = new Mat();
-            if (imgRotation.channels() == 3) {
-                Imgproc.cvtColor(imgRotation, imgGray, Imgproc.COLOR_BGR2GRAY);
-            } else {
-                imgRotation.copyTo(imgGray);
-            }
-
-
-            List<Mat> NewCornersList = new ArrayList<>();
-            Mat Newids = new Mat();
-            Aruco.detectMarkers(imgGray, Dict, NewCornersList, Newids);
-
-            if (NewCornersList.isEmpty()) {
-                return new DataPaper(imgRotation, false, Inputpaper, -1);
-            }
-
-            // -------------- TR and TL ------------------
-            Mat firstCorners = NewCornersList.get(0);
-            double[] tl = firstCorners.get(0, 0);
-            double[] tr = firstCorners.get(0, 1);
-            double rollRed = Math.atan2(tl[1] - tr[1], tl[0] - tr[0]);
-            double rollDeg = Math.toDegrees(rollRed);
-
-            //-------------- x2 CameraMatrix -----------------
-            // การใช้ scale ที่เป็นบวก 2.0 สำหรับ K_zoom ตามที่ตกลงกันไว้
-            double K_zoom_scale = 2.0;
-            Mat K_zoom = cameraMatrix.clone();
-            K_zoom.put(0, 0, K_zoom.get(0, 0)[0] * K_zoom_scale);
-            K_zoom.put(1, 1, K_zoom.get(1, 1)[0] * K_zoom_scale);
-            K_zoom.put(0, 2, K_zoom.get(0, 2)[0] * K_zoom_scale);
-            K_zoom.put(1, 2, K_zoom.get(1, 2)[0] * K_zoom_scale);
-
-            // ------------------- 3x3 scale = 1.0 -----------------------
-
-            double[] dims = {imgGray.cols(), imgGray.rows()};
-            double newCenter_x = dims[0] / 2.0;
-            double newCenter_y = dims[1] / 2.0;
-            org.opencv.core.Point Newcenter = new org.opencv.core.Point(newCenter_x, newCenter_y);
-
-            Mat M2 = Imgproc.getRotationMatrix2D(Newcenter, rollDeg, 1.0);
-            Mat M3 = Mat.eye(3, 3, CvType.CV_64F);
-            for (int r = 0; r < 2; r++) {
-                for (int c = 0; c < 3; c++) {
-                    M3.put(r, c, M2.get(r, c)[0]);
-                }
-            }
-
-            // 7. คูณ M3 @ K_zoom -> K_new ---------------------------------------------
-            Mat K_new = new Mat();
-            Core.gemm(M3, K_zoom, 1.0, Mat.zeros(3, 3, CvType.CV_64F), 0.0, K_new);
-
-            // 8. Estimate pose ด้วย K_new ---------------------------------------------
-            Mat Newrvecs = new Mat(), Newtvecs = new Mat();
-            Aruco.estimatePoseSingleMarkers(
-                    NewCornersList, 0.05f,
-                    K_new, dstMatrix,
-                    Newrvecs, Newtvecs
-            );
-
-            // ดึง rvec, tvec แรก
-            Mat Newrvec = Newrvecs.row(0).reshape(1, 3);
-            Mat Newtvec = Newtvecs.row(0).reshape(1, 3);
-
-            // 9. นิยามมุมกระดาษในโลก (object points) -------------------------------
-            double paperW = 0.30, paperH = 0.23;
-            double offX = 0.05, offY = 0.055;
-            MatOfPoint3f objectPoints = new MatOfPoint3f(
-                    new Point3(offX, offY, 0.0), // TL
-                    new Point3(offX - paperW, offY, 0.0), // TR
-                    new Point3(offX - paperW, offY - paperH + 0.01, 0.0), // BR
-                    new Point3(offX, offY - paperH + 0.05, 0.0)  // BL
-            );
-
-            // 10. Project 3D -> 2D ด้วย K_new ----------------------------------------
-            MatOfDouble distCoeffs = new MatOfDouble(-0.164787, 0.020375, -0.001572, -0.000369, 0);
-            MatOfPoint2f imagePts = new MatOfPoint2f();
-            Calib3d.projectPoints(
-                    objectPoints,
-                    Newrvec,
-                    Newtvec,
-                    K_new,
-                    distCoeffs,
-                    imagePts
-            );
-            org.opencv.core.Point[] srcPtsArr = imagePts.toArray();
-
-            // 11. เตรียม dst pts และคำนวณ Homography -------------------------------
-            MatOfPoint2f dstPts = new MatOfPoint2f(
-                    new org.opencv.core.Point(0, 0),
-                    new org.opencv.core.Point(539, 0),
-                    new org.opencv.core.Point(539, 299),
-                    new org.opencv.core.Point(0, 299)
-            );
-            Mat H = Calib3d.findHomography(new MatOfPoint2f(srcPtsArr), dstPts);
-
-            // 12. Warp Perspective และ flip ---------------------------------------
-            Mat warped = new Mat();
-            Imgproc.warpPerspective(imgGray, warped, H, new Size(540, 300));
-            warpedFlipped = warped;
-            Core.flip(warped, warpedFlipped, 1);
+            api.saveMatImage(Cam, "imgUndistort_" + Inputpaper + ".png");
 
         }
 
+        keeprvecs.get(0, 0, rvec_array);
+        keeptvecs.get(0, 0, tvec_array);
+
+        // คราวนี้แบ่งกรอบภาพซ้าย/ขวา ตามค่า paper
+        int wCam = imgUndistort.cols();
+        int hCam = imgUndistort.rows();
+        int halfWidth = wCam / 2;
+
+        // --------------------------------- แยกภาพ ที่ area 2 and area 3 ----------------------------------//
+        Mat imgCrop;
+        if (paper == 2) {
+            // ซ้าย
+            imgCrop = new Mat(imgUndistort, new Rect(0, 0, halfWidth, hCam));
+
+        } else if (paper == 3) {
+            // ขวา
+            imgCrop = new Mat(imgUndistort, new Rect(halfWidth, 0, wCam - halfWidth, hCam));
+        } else {
+            imgCrop = imgUndistort.clone(); // หรืออาจจะใช้ imgUndistort ได้เลย
+        }
+
+        // สร้าง ArUco dictionary และตัวเก็บผลลัพธ์
+        Mat ids = new Mat();
+        List<Mat> corners = new ArrayList<>();
+
+        // ---------------------------- Sharp ----------------------------
+        // สร้าง Mat เปล่าสำหรับเก็บภาพ sharpened และ undistort
+        Mat imgSharpned = new Mat();
+        Imgproc.filter2D(imgCrop, imgSharpned, -1, kernel);
+        // ---------------------------- Detect Markers ----------------------------
+        Aruco.detectMarkers(imgSharpned, Dict, corners, ids);
+
+        arucoid = (int) ids.get(0, 0)[0];
+
+        // ---------------------------- Rotation Paper ----------------------------
+        int idx = 0;
+
+        // ดึง Mat ของมาร์กเกอร์ตัวแรก (1×4×2)
+        Mat selectedCorner = corners.get(idx);
+
+        // เตรียม List สำหรับ estimatePoseSingleMarkers
+        List<Mat> CornersList = new ArrayList<>();
+        CornersList.add(selectedCorner);
+
+        // เตรียมตัวเก็บ rvecs / tvecs
+        Mat rvecs = new Mat();
+        Mat tvecs = new Mat();
+        Aruco.estimatePoseSingleMarkers(CornersList, ARUCO_LEN, cameraMatrix, dstMatrix, rvecs, tvecs);
+
+        // สร้าง MatOfPoint2f เพื่อแปลง selectedCorner → Point[]
+        MatOfPoint2f cornerPoints = new MatOfPoint2f(selectedCorner);
+        org.opencv.core.Point[] cornerArray = cornerPoints.toArray();
+
+        // ---------------------------- คำนวณ pixel-to-meter ----------------------------
+        double pixelDistance1 = Core.norm(new MatOfPoint2f(cornerArray[0]), new MatOfPoint2f(cornerArray[1]));
+        double pixelDistance2 = Core.norm(new MatOfPoint2f(cornerArray[0]), new MatOfPoint2f(cornerArray[3]));
+        double pixelDistance3 = Core.norm(new MatOfPoint2f(cornerArray[1]), new MatOfPoint2f(cornerArray[2]));
+        double pixelDistance4 = Core.norm(new MatOfPoint2f(cornerArray[2]), new MatOfPoint2f(cornerArray[3]));
+        double pixelDistance = (pixelDistance1 + pixelDistance2 + pixelDistance3 + pixelDistance4) / 4;
+
+        double pixelToMRatio = pixelDistance / ARUCO_LEN;
+
+        // ---------------------------- คำนวณมุมหมุน (roll) ----------------------------
+        double xTL = cornerArray[0].x;
+        double yTL = cornerArray[0].y;
+        double xTR = cornerArray[1].x;
+        double yTR = cornerArray[1].y;
+
+        double roll_rad = Math.atan2(yTL - yTR, xTL - xTR);
+        double roll_deg = Math.toDegrees(roll_rad);
+
+        // ---------------------------- ดึงมุมทั้ง 4 ----------------------------
+        double[] TL = selectedCorner.get(0, 0);  // [x_TL, y_TL]
+        double[] TR = selectedCorner.get(0, 1);  // [x_TR, y_TR]
+        double[] BR = selectedCorner.get(0, 2);  // [x_BR, y_BR]
+        double[] BL = selectedCorner.get(0, 3);  // [x_BL, y_BL]
+
+        // ---------------------------- หาจุดศูนย์กลางของมาร์กเกอร์ ----------------------------
+        double center_x = (TL[0] + BR[0]) / 2.0;
+        double center_y = (TL[1] + BR[1]) / 2.0;
+
+        org.opencv.core.Point center = new org.opencv.core.Point(center_x, center_y);
+
+        // ---------------------------- สร้าง Rotation Matrix (2×3) ----------------------------
+        // ยังคงใช้ -2.0 ตามคำขอครั้งก่อน
+        Mat M = Imgproc.getRotationMatrix2D(center, roll_deg, -2.0);
+
+        // ---------------------------- คำนวณขนาดภาพปลายทางที่เหมาะสมหลังการหมุน ----------------------------
+        double originalWidth = imgSharpned.cols();
+        double originalHeight = imgSharpned.rows();
+
+        double absCos = Math.abs(Math.cos(Math.toRadians(roll_deg)));
+        double absSin = Math.abs(Math.sin(Math.toRadians(roll_deg)));
+
+        int newWidth = (int) Math.round(originalHeight * absSin + originalWidth * absCos);
+        int newHeight = (int) Math.round(originalHeight * absCos + originalWidth * absSin);
+
+        M.put(0, 2, M.get(0, 2)[0] + (newWidth / 2) - center_x);
+        M.put(1, 2, M.get(1, 2)[0] + (newHeight / 2) - center_y);
+
+        imgRotation = new Mat();
+        Imgproc.warpAffine(imgSharpned, imgRotation, M, new org.opencv.core.Size(newWidth, newHeight), Imgproc.INTER_LINEAR, Core.BORDER_CONSTANT, new Scalar(0, 0, 0));
+
+        // ---------------------------- นำ kernel มา sharpen ผลลัพธ์อีกครั้ง ----------------------------
+        Imgproc.filter2D(imgRotation, imgRotation, -1, kernel);
+
+        // ---------------------------- ส่วนที่เพิ่มเข้ามาสำหรับการซูม imgBackup 1.3 เท่า ----------------------------
+        // คำนวณจุดศูนย์กลางของ Aruco marker ในภาพ imgRotation
+        Mat tempImgGray = new Mat();
+        if (imgRotation.channels() == 3) {
+            Imgproc.cvtColor(imgRotation, tempImgGray, Imgproc.COLOR_BGR2GRAY);
+        } else {
+            imgRotation.copyTo(tempImgGray);
+        }
+
+        List<Mat> currentCorners = new ArrayList<>();
+        Mat currentIds = new Mat();
+        Aruco.detectMarkers(tempImgGray, Dict, currentCorners, currentIds);
+
+        if (!currentCorners.isEmpty()) {
+            Mat arucoCorner = currentCorners.get(0); // เอา Aruco marker ตัวแรก
+            // หาจุดศูนย์กลางของ Aruco marker ในภาพ imgRotation
+            double current_aruco_center_x = (arucoCorner.get(0, 0)[0] + arucoCorner.get(0, 2)[0]) / 2.0;
+            double current_aruco_center_y = (arucoCorner.get(0, 0)[1] + arucoCorner.get(0, 2)[1]) / 2.0;
+
+            // *** ปรับการคำนวณขนาด Crop สำหรับการซูม 1.3 เท่า ***
+            double zoomFactor = 1.3;
+            int targetOutputSize = 640; // ขนาดสุดท้ายของ imgBackup
+
+            int cropWidth = (int) Math.round(targetOutputSize / zoomFactor);
+            int cropHeight = (int) Math.round(targetOutputSize / zoomFactor);
+            // ตรวจสอบให้แน่ใจว่า cropWidth และ cropHeight เป็นคู่
+            cropWidth = (cropWidth % 2 == 0) ? cropWidth : cropWidth + 1;
+            cropHeight = (cropHeight % 2 == 0) ? cropHeight : cropHeight + 1;
+
+
+            // คำนวณตำแหน่งเริ่มต้นของการ Crop
+            int x = (int) (current_aruco_center_x - cropWidth / 2);
+            int y = (int) (current_aruco_center_y - cropHeight / 2);
+
+            // ตรวจสอบขอบเขตของการ Crop ไม่ให้เกินภาพ imgRotation
+            x = Math.max(0, x);
+            y = Math.max(0, y);
+
+            // ปรับขนาด cropWidth/Height ให้ไม่เกินขอบภาพ แต่พยายามรักษาสัดส่วน
+            int actualCropWidth = Math.min(cropWidth, imgRotation.cols() - x);
+            int actualCropHeight = Math.min(cropHeight, imgRotation.rows() - y);
+
+            // หากพื้นที่ Crop ที่เป็นไปได้เล็กกว่าที่คำนวณได้มาก ให้ถอยกลับไปใช้ขนาดเต็มแล้ว resize
+            if (actualCropWidth <= 0 || actualCropHeight <= 0 || actualCropWidth < (cropWidth * 0.8) || actualCropHeight < (cropHeight * 0.8)) {
+                System.out.println("Warning: Crop area too small for 1.3x zoom or invalid dimensions. Falling back to normal resize for imgBackup.");
+                Imgproc.resize(imgRotation, imgBackup, new Size(targetOutputSize, targetOutputSize), 0, 0, Imgproc.INTER_LINEAR);
+            } else {
+                Rect cropRect = new Rect(x, y, actualCropWidth, actualCropHeight);
+                Mat croppedImage = new Mat(imgRotation, cropRect);
+                Imgproc.resize(croppedImage, imgBackup, new Size(targetOutputSize, targetOutputSize), 0, 0, Imgproc.INTER_LINEAR);
+                croppedImage.release(); // ปล่อย Mat ที่ถูก Crop เพื่อประหยัดหน่วยความจำ
+            }
+        } else {
+            // ถ้าไม่พบ Aruco marker ใน imgRotation หลังการหมุน ก็ไม่สามารถซูมตาม marker ได้
+            // จึงใช้การ resize แบบเดิม
+            System.out.println("Warning: Aruco marker not found in imgRotation for zoom. Falling back to normal resize for imgBackup.");
+            Imgproc.resize(imgRotation, imgBackup, new Size(640, 640), 0, 0, Imgproc.INTER_LINEAR);
+        }
+        // --------------------------------------------------------------------------------------------------
+
+        api.saveMatImage(imgBackup, "ImgBackup_" + Inputpaper + ".png");
+
+        Mat imgGray = new Mat();
+        if (imgRotation.channels() == 3) {
+            Imgproc.cvtColor(imgRotation, imgGray, Imgproc.COLOR_BGR2GRAY);
+        } else {
+            imgRotation.copyTo(imgGray);
+        }
+
+
+        List<Mat> NewCornersList = new ArrayList<>();
+        Mat Newids = new Mat();
+        Aruco.detectMarkers(imgGray, Dict, NewCornersList, Newids);
+
+
+        // -------------- TR and TL ------------------
+        Mat firstCorners = NewCornersList.get(0);
+        double[] tl = firstCorners.get(0, 0);
+        double[] tr = firstCorners.get(0, 1);
+        double rollRed = Math.atan2(tl[1] - tr[1], tl[0] - tr[0]);
+        double rollDeg = Math.toDegrees(rollRed);
+
+        //-------------- x2 CameraMatrix -----------------
+        // การใช้ scale ที่เป็นบวก 2.0 สำหรับ K_zoom ตามที่ตกลงกันไว้
+        double K_zoom_scale = 2.0;
+        Mat K_zoom = cameraMatrix.clone();
+        K_zoom.put(0, 0, K_zoom.get(0, 0)[0] * K_zoom_scale);
+        K_zoom.put(1, 1, K_zoom.get(1, 1)[0] * K_zoom_scale);
+        K_zoom.put(0, 2, K_zoom.get(0, 2)[0] * K_zoom_scale);
+        K_zoom.put(1, 2, K_zoom.get(1, 2)[0] * K_zoom_scale);
+
+        // ------------------- 3x3 scale = 1.0 -----------------------
+
+        double[] dims = {imgGray.cols(), imgGray.rows()};
+        double newCenter_x = dims[0] / 2.0;
+        double newCenter_y = dims[1] / 2.0;
+        org.opencv.core.Point Newcenter = new org.opencv.core.Point(newCenter_x, newCenter_y);
+
+        Mat M2 = Imgproc.getRotationMatrix2D(Newcenter, rollDeg, 1.0);
+        Mat M3 = Mat.eye(3, 3, CvType.CV_64F);
+        for (int r = 0; r < 2; r++) {
+            for (int c = 0; c < 3; c++) {
+                M3.put(r, c, M2.get(r, c)[0]);
+            }
+        }
+
+        // 7. คูณ M3 @ K_zoom -> K_new ---------------------------------------------
+        Mat K_new = new Mat();
+        Core.gemm(M3, K_zoom, 1.0, Mat.zeros(3, 3, CvType.CV_64F), 0.0, K_new);
+
+        // 8. Estimate pose ด้วย K_new ---------------------------------------------
+        Mat Newrvecs = new Mat(), Newtvecs = new Mat();
+        Aruco.estimatePoseSingleMarkers(
+                NewCornersList, 0.05f,
+                K_new, dstMatrix,
+                Newrvecs, Newtvecs
+        );
+
+        // ดึง rvec, tvec แรก
+        Mat Newrvec = Newrvecs.row(0).reshape(1, 3);
+        Mat Newtvec = Newtvecs.row(0).reshape(1, 3);
+
+        // 9. นิยามมุมกระดาษในโลก (object points) -------------------------------
+        double paperW = 0.30, paperH = 0.23;
+        double offX = 0.05, offY = 0.055;
+        MatOfPoint3f objectPoints = new MatOfPoint3f(
+                new Point3(offX, offY, 0.0), // TL
+                new Point3(offX - paperW, offY, 0.0), // TR
+                new Point3(offX - paperW, offY - paperH + 0.01, 0.0), // BR
+                new Point3(offX, offY - paperH + 0.05, 0.0)  // BL
+        );
+
+        // 10. Project 3D -> 2D ด้วย K_new ----------------------------------------
+        MatOfDouble distCoeffs = new MatOfDouble(-0.164787, 0.020375, -0.001572, -0.000369, 0);
+        MatOfPoint2f imagePts = new MatOfPoint2f();
+        Calib3d.projectPoints(
+                objectPoints,
+                Newrvec,
+                Newtvec,
+                K_new,
+                distCoeffs,
+                imagePts
+        );
+        org.opencv.core.Point[] srcPtsArr = imagePts.toArray();
+
+        // 11. เตรียม dst pts และคำนวณ Homography -------------------------------
+        MatOfPoint2f dstPts = new MatOfPoint2f(
+                new org.opencv.core.Point(0, 0),
+                new org.opencv.core.Point(539, 0),
+                new org.opencv.core.Point(539, 299),
+                new org.opencv.core.Point(0, 299)
+        );
+        Mat H = Calib3d.findHomography(new MatOfPoint2f(srcPtsArr), dstPts);
+
+        // 12. Warp Perspective และ flip ---------------------------------------
+        Mat warped = new Mat();
+        Imgproc.warpPerspective(imgGray, warped, H, new Size(540, 300));
+        warpedFlipped = warped;
+        Core.flip(warped, warpedFlipped, 1);
+
+
         Size originalSize = warpedFlipped.size();
-        double originalWidth = originalSize.width;
-        double originalHeight = originalSize.height;
+        originalWidth = originalSize.width;
+        originalHeight = originalSize.height;
 
         double scale_final = Math.min((double) 640 / originalWidth, (double) 640 / originalHeight);
 
@@ -579,34 +585,70 @@ public class YourService extends KiboRpcService {
 
         Kinematics posNow = api.getRobotKinematics();
 
-        return new DataPaper(imgResult, imgRotation, true, Inputpaper, arucoid, rvec_array, tvec_array, posNow, quaternionNow);
+        return new DataPaper(imgResult, imgRotation, true, Inputpaper, arucoid, rvec_array, tvec_array, keepcorners,posNow, quaternionNow);
     }
 
-    private void reportArea1(double[] tvec, Point position) throws IOException {
-        // เริ่มต้นเมธอด
-        Log.i("ReportArea1", "Starting reportArea1 method.");
+    private Mat blackOutHalfImage(Mat img, int paper) {
+        // 1. ดึงขนาดของรูปภาพ
+        int width = img.width();   // 1280
+        int height = img.height(); // 960
+        int halfWidth = width / 2;
 
-        double x0 = tvec[0];
-        double y0 = tvec[1];
-        double z0 = tvec[2];
-        // แสดงค่า x0, y0, z0
-        Log.i("ReportArea1", "tvec (x0, y0, z0): " + x0 + ", " + y0 + ", " + z0);
+        // 2. กำหนดสีดำและประเภทการวาด (แบบทึบ)
+        Scalar blackColor = new Scalar(0, 0, 0);
+        int thickness = Imgproc.FILLED; // หรือ -1 ก็ได้
 
-        double x1 = position.getX();
-        double y1 = position.getY();
-        double z1 = position.getZ();
-        // แสดงค่า x1, y1, z1
-        Log.i("ReportArea1", "Position (x1, y1, z1): " + x1 + ", " + y1 + ", " + z1);
+        // 3. สร้างเงื่อนไขตามค่า paper
+        if (paper == 2) {
+            // ---> เติมสีดำที่ "ครึ่งขวา"
+            // กำหนดจุดเริ่มต้น (บนซ้ายของพื้นที่) และจุดสิ้นสุด (ล่างขวาของพื้นที่)
+            org.opencv.core.Point topLeft = new org.opencv.core.Point(halfWidth, 0);
+            org.opencv.core.Point bottomRight = new org.opencv.core.Point(width, height);
 
-        boolean check = moveToArea(targetPositions.get(MissionTarget.PLAN2_CAP_A1), targetOrientations.get(MissionTarget.PLAN2_CAP_A1));
-        Point reportPoint = new Point(x1 + x0, -9.83, z1 + z0);
-        boolean reportPosition =  moveToArea(reportPoint, targetOrientations.get(MissionTarget.PLAN2_CAP_A1));
+            Imgproc.rectangle(img, topLeft, bottomRight, blackColor, thickness);
 
-        // แสดงตำแหน่งของ reportPoint
-        Log.i("ReportArea1", "Report Point - X: " + reportPoint.getX() + ", Y: " + reportPoint.getY() + ", Z: " + reportPoint.getZ());
-        // แจ้งว่าการเดินทางเสร็จสิ้น
-        Log.i("ReportArea1", "Movement to report point completed for Area 1.");
+            api.saveMatImage(img, "TestImgLeft.png");
+
+        } else if (paper == 3) {
+            // ---> เติมสีดำที่ "ครึ่งซ้าย"
+            org.opencv.core.Point topLeft = new org.opencv.core.Point(0, 0);
+            org.opencv.core.Point bottomRight = new org.opencv.core.Point(halfWidth, height);
+
+            Imgproc.rectangle(img, topLeft, bottomRight, blackColor, thickness);
+            api.saveMatImage(img, "TestImgRight.png");
+        }
+
+        // หากค่า paper ไม่ใช่ 2 หรือ 3 ก็จะไม่ทำอะไรกับภาพ
+
+        // 4. คืนค่ารูปภาพที่แก้ไขแล้ว
+        return img;
     }
+
+//    private void reportArea1(double[] tvec, Point position) throws IOException {
+//        // เริ่มต้นเมธอด
+//        Log.i("ReportArea1", "Starting reportArea1 method.");
+//
+//        double x0 = tvec[0];
+//        double y0 = tvec[1];
+//        double z0 = tvec[2];
+//        // แสดงค่า x0, y0, z0
+//        Log.i("ReportArea1", "tvec (x0, y0, z0): " + x0 + ", " + y0 + ", " + z0);
+//
+//        double x1 = position.getX();
+//        double y1 = position.getY();
+//        double z1 = position.getZ();
+//        // แสดงค่า x1, y1, z1
+//        Log.i("ReportArea1", "Position (x1, y1, z1): " + x1 + ", " + y1 + ", " + z1);
+//
+//        boolean check = moveToArea(targetPositions.get(MissionTarget.PLAN2_CAP_A1), targetOrientations.get(MissionTarget.PLAN2_CAP_A1));
+//        Point reportPoint = new Point(x1 + x0, -9.83, z1 + z0);
+//        boolean reportPosition =  moveToArea(reportPoint, targetOrientations.get(MissionTarget.PLAN2_CAP_A1));
+//
+//        // แสดงตำแหน่งของ reportPoint
+//        Log.i("ReportArea1", "Report Point - X: " + reportPoint.getX() + ", Y: " + reportPoint.getY() + ", Z: " + reportPoint.getZ());
+//        // แจ้งว่าการเดินทางเสร็จสิ้น
+//        Log.i("ReportArea1", "Movement to report point completed for Area 1.");
+//    }
 
 //    private void reportArea2(double[] tvec, Point position) throws IOException {
 //        // เริ่มต้นเมธอด
@@ -708,102 +750,194 @@ public class YourService extends KiboRpcService {
 //        // แจ้งว่าการเดินทางเสร็จสิ้น
 //        Log.i("ReportArea4", "Movement to report point completed for Area 4.");
 //    }
-public Point getTranslationPoint(double[] tvec, double[] rvec, Point myOriginalPoint) {
 
-    // --- Step 1: Convert rvec to a 3x3 Rotation Matrix R (using Rodrigues' Formula) ---
-    double rx = rvec[0];
-    double ry = rvec[1];
-    double rz = rvec[2];
+//public Point getTranslationPoint(double[] tvec, double[] rvec, Point myOriginalPoint) {
+//
+//    // --- Step 1: Convert rvec to a 3x3 Rotation Matrix R (using Rodrigues' Formula) ---
+//    double rx = rvec[0];
+//    double ry = rvec[1];
+//    double rz = rvec[2];
+//
+//    // Calculate the angle of rotation (theta) from the magnitude of the rvec
+//    double theta = Math.sqrt(rx * rx + ry * ry + rz * rz);
+//
+//    // Define a small epsilon for floating-point comparisons to handle near-zero rotations
+//    final double EPSILON = 1e-9;
+//
+//    double[][] R = new double[3][3];
+//
+//    // If theta is very small (near zero), the rotation matrix is approximately the identity matrix.
+//    if (theta < EPSILON) {
+//        R = new double[][]{
+//                {1.0, 0.0, 0.0},
+//                {0.0, 1.0, 0.0},
+//                {0.0, 0.0, 1.0}
+//        };
+//    } else {
+//        // Calculate the unit rotation axis (omega)
+//        double omegax = rx / theta;
+//        double omegay = ry / theta;
+//        double omegaz = rz / theta;
+//
+//        // Pre-calculate sin(theta) and cos(theta)
+//        double sinTheta = Math.sin(theta);
+//        double cosTheta = Math.cos(theta);
+//        double oneMinusCosTheta = 1.0 - cosTheta;
+//
+//        // Construct the skew-symmetric matrix K from the unit axis vector
+//        double[][] K = {
+//                {0.0, -omegaz, omegay},
+//                {omegaz, 0.0, -omegax},
+//                {-omegay, omegax, 0.0}
+//        };
+//
+//        // Calculate K^2
+//        double omegax2 = omegax * omegax;
+//        double omegay2 = omegay * omegay;
+//        double omegaz2 = omegaz * omegaz;
+//        double omegaxy = omegax * omegay;
+//        double omegaxz = omegax * omegaz;
+//        double omegayz = omegay * omegaz;
+//
+//        double[][] K2 = {
+//                {omegax2 - 1.0, omegaxy, omegaxz},
+//                {omegaxy, omegay2 - 1.0, omegayz},
+//                {omegaxz, omegayz, omegaz2 - 1.0}
+//        };
+//
+//        // Apply Rodrigues' formula: R = I + sin(theta)*K + (1 - cos(theta))*K^2
+//        for (int i = 0; i < 3; i++) {
+//            for (int j = 0; j < 3; j++) {
+//                double identityPart = (i == j) ? 1.0 : 0.0;
+//                R[i][j] = identityPart +
+//                        sinTheta * K[i][j] +
+//                        oneMinusCosTheta * K2[i][j];
+//            }
+//        }
+//    }
+//
+//    // --- Step 2: Transform the original point P using R and T (tvec) ---
+//
+//
+//    // Perform Rotation (R * P)
+//    double P_primeX = R[0][0] * myOriginalPoint.getX() + R[0][1] * myOriginalPoint.getY() + R[0][2] * myOriginalPoint.getZ();
+//    double P_primeY = R[1][0] * myOriginalPoint.getX() + R[1][1] * myOriginalPoint.getY() + R[1][2] * myOriginalPoint.getZ();
+//    double P_primeZ = R[2][0] * myOriginalPoint.getX() + R[2][1] * myOriginalPoint.getY() + R[2][2] * myOriginalPoint.getZ();
+//
+//    // Perform Translation (+ T)
+//    P_primeX += tvec[0];
+//    P_primeY += tvec[1];
+//    P_primeZ += tvec[2];
+//
+//    Point P_prime = new Point(P_primeX,P_primeY,P_primeZ);
+//    return P_prime;
+//}
+//    public Point handleKeepInZone(Point position){
+//        double xMin = 10.3;
+//        double xMax = 11.55;
+//        double yMin = -10.2;
+//        double yMax = -6.0;
+//        double zMin = 4.32;
+//        double zMax = 5.57;
+//        double xNew = position.getX();
+//        double yNew = position.getY();
+//        double zNew = position.getZ();
+//        //check x
+//        if (position.getX() < xMin){xNew = xMin + 0.55;}
+//        else if (position.getX() > xMax){xNew = xMax - 0.55;}
+//        //check y
+//        if (position.getY() < yMin){yNew = yMin + 0.55;}
+//        else if (position.getY() > yMax){yNew = yMax - 0.55;}
+//        //check z
+//        if (position.getZ() < zMin){zNew = zMin + 0.55;}
+//        else if (position.getZ() > zMax){zNew = zMax - 0.55;}
+//
+//        return new Point(xNew, yNew, zNew);
+//
+//    }
 
-    // Calculate the angle of rotation (theta) from the magnitude of the rvec
-    double theta = Math.sqrt(rx * rx + ry * ry + rz * rz);
+//    public Point moveWithin(
+//            Point myOriginalPoint,
+////            double[] myOriginalRvec,
+//            Point translationPoint) {
+//
+//        final double MAX_POSITION_DISTANCE = 0.8; // The required maximum distance in meters
+//        final double MAX_TILT_DEGREES = 30.0;     // The required maximum tilt in degrees
+//        final double MAX_TILT_RADIANS = Math.toRadians(MAX_TILT_DEGREES);
+//        final double EPSILON = 1e-9;              // For floating-point comparisons
+//
+//        // --- 1. Adjust Positional Distance ---
+//        double deltaX = myOriginalPoint.getX() - translationPoint.getX();
+//        double deltaY = myOriginalPoint.getY() - translationPoint.getY();
+//        double deltaZ = myOriginalPoint.getZ() - translationPoint.getZ();
+//
+//        double currentDistance = Math.sqrt(
+//                Math.pow(deltaX, 2) +
+//                        Math.pow(deltaY, 2) +
+//                        Math.pow(deltaZ, 2)
+//        );
+//
+//        if (currentDistance > MAX_POSITION_DISTANCE) {
+//            if (currentDistance > EPSILON) { // Avoid division by zero
+//                double scaleFactor = MAX_POSITION_DISTANCE / currentDistance;
+//                myOriginalPoint = new Point(translationPoint.getX() + deltaX * scaleFactor,translationPoint.getY() + deltaY * scaleFactor,translationPoint.getZ() + deltaZ * scaleFactor);
+//
+//            }
+//        }
 
-    // Define a small epsilon for floating-point comparisons to handle near-zero rotations
-    final double EPSILON = 1e-9;
+        // --- 2. Adjust Orientation (Tilt) ---
+        // The magnitude of myOriginalRvec is the current tilt angle in radians from identity.
+//        double currentTiltRadians = Math.sqrt(
+//                Math.pow(myOriginalRvec[0], 2) +
+//                        Math.pow(myOriginalRvec[1], 2) +
+//                        Math.pow(myOriginalRvec[2], 2)
+//        );
+//
+//        if (currentTiltRadians > MAX_TILT_RADIANS) {
+//            if (currentTiltRadians > EPSILON) { // Avoid division by zero
+//                // Scale the rvec components to reduce its magnitude (angle)
+//                double scaleFactor = MAX_TILT_RADIANS / currentTiltRadians;
+//                myOriginalRvec[0] *= scaleFactor;
+//                myOriginalRvec[1] *= scaleFactor;
+//                myOriginalRvec[2] *= scaleFactor;
+//            }
+//        }
 
-    double[][] R = new double[3][3];
+//        return myOriginalPoint; // Return the adjusted original point
+//    }
 
-    // If theta is very small (near zero), the rotation matrix is approximately the identity matrix.
-    if (theta < EPSILON) {
-        R = new double[][]{
-                {1.0, 0.0, 0.0},
-                {0.0, 1.0, 0.0},
-                {0.0, 0.0, 1.0}
-        };
-    } else {
-        // Calculate the unit rotation axis (omega)
-        double omegax = rx / theta;
-        double omegay = ry / theta;
-        double omegaz = rz / theta;
-
-        // Pre-calculate sin(theta) and cos(theta)
-        double sinTheta = Math.sin(theta);
-        double cosTheta = Math.cos(theta);
-        double oneMinusCosTheta = 1.0 - cosTheta;
-
-        // Construct the skew-symmetric matrix K from the unit axis vector
-        double[][] K = {
-                {0.0, -omegaz, omegay},
-                {omegaz, 0.0, -omegax},
-                {-omegay, omegax, 0.0}
-        };
-
-        // Calculate K^2
-        double omegax2 = omegax * omegax;
-        double omegay2 = omegay * omegay;
-        double omegaz2 = omegaz * omegaz;
-        double omegaxy = omegax * omegay;
-        double omegaxz = omegax * omegaz;
-        double omegayz = omegay * omegaz;
-
-        double[][] K2 = {
-                {omegax2 - 1.0, omegaxy, omegaxz},
-                {omegaxy, omegay2 - 1.0, omegayz},
-                {omegaxz, omegayz, omegaz2 - 1.0}
-        };
-
-        // Apply Rodrigues' formula: R = I + sin(theta)*K + (1 - cos(theta))*K^2
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
-                double identityPart = (i == j) ? 1.0 : 0.0;
-                R[i][j] = identityPart +
-                        sinTheta * K[i][j] +
-                        oneMinusCosTheta * K2[i][j];
-            }
-        }
-    }
-
-    // --- Step 2: Transform the original point P using R and T (tvec) ---
-
-
-    // Perform Rotation (R * P)
-    double P_primeX = R[0][0] * myOriginalPoint.getX() + R[0][1] * myOriginalPoint.getY() + R[0][2] * myOriginalPoint.getZ();
-    double P_primeY = R[1][0] * myOriginalPoint.getX() + R[1][1] * myOriginalPoint.getY() + R[1][2] * myOriginalPoint.getZ();
-    double P_primeZ = R[2][0] * myOriginalPoint.getX() + R[2][1] * myOriginalPoint.getY() + R[2][2] * myOriginalPoint.getZ();
-
-    // Perform Translation (+ T)
-    P_primeX += tvec[0];
-    P_primeY += tvec[1];
-    P_primeZ += tvec[2];
-
-    Point P_prime = new Point(P_primeX,P_primeY,P_primeZ);
-    return P_prime;
-}
 
     public void moveToReportArea(int Area_num,DataPaper dataPaper) throws IOException {
         boolean reportPosition = false;
+//        boolean moveCapArea = false;
+        double[] tvec = dataPaper.getTvec();
+        double[] rvec = dataPaper.getRvec();
+
         switch (Area_num) {
             case 1:
-                reportArea1(dataPaper.getTvec(), targetPositions.get(MissionTarget.AREA1_POINT2));
+                double[] tvec1 = {tvec[0],tvec[2],tvec[1]};
+
+                Point moveReportPoint1 = targetPositions.get(MissionTarget.PLAN2_CAP_A1);
+                Point translationPoint1 = new Point(moveReportPoint1.getX() + tvec1[0] ,-9.85, moveReportPoint1.getZ() + tvec1[2]);
+                reportPosition = moveToArea(translationPoint1, targetOrientations.get(MissionTarget.PLAN2_CAP_A1));
                 break;
             case 2:
-                reportPosition = moveToArea(getTranslationPoint(dataPaper.getTvec(),dataPaper.getRvec(), targetPositions.get(MissionTarget.ASTRONAUT_INTERACTION_POS)), targetOrientations.get(MissionTarget.AREA23_CAPTURE));
+                double[] tvec2 = {tvec[1],tvec[0],tvec[2]};
+                Point moveReportPoint2 =targetPositions.get(MissionTarget.PLAN2_CAP_A23);
+                Point translationPoint2 = new Point(moveReportPoint2.getX() + tvec2[0],moveReportPoint2.getY() + tvec2[1] , 4.57);
+                reportPosition = moveToArea(translationPoint2, targetOrientations.get(MissionTarget.PLAN2_CAP_A23));
                 break;
             case 3:
-                reportPosition = moveToArea(getTranslationPoint(dataPaper.getTvec(),dataPaper.getRvec(), targetPositions.get(MissionTarget.ASTRONAUT_INTERACTION_POS)), targetOrientations.get(MissionTarget.AREA23_CAPTURE));
+                double[] tvec3 = {tvec[1],tvec[0],tvec[2]};
+                Point moveReportPoint3 = targetPositions.get(MissionTarget.PLAN2_CAP_A23);
+                Point translationPoint3 = new Point(moveReportPoint3.getX() + tvec3[0], moveReportPoint3.getY() + tvec3[1], 4.57);
+                reportPosition = moveToArea(translationPoint3, targetOrientations.get(MissionTarget.PLAN2_CAP_A23));
                 break;
             case 4:
-                reportPosition = moveToArea(getTranslationPoint(dataPaper.getTvec(),dataPaper.getRvec(), targetPositions.get(MissionTarget.ASTRONAUT_INTERACTION_POS)), targetOrientations.get(MissionTarget.AREA4_TARGET));
+                double[] tvec4 = {tvec[2],-1 * tvec[0], tvec[1]};
+                Point moveReportPoint4 =targetPositions.get(MissionTarget.PLAN2_CAP_A4);
+                Point translationPoint4 = new Point(10.58, moveReportPoint4.getY() + tvec4[1], moveReportPoint4.getZ() +tvec4[2]);
+                reportPosition = moveToArea(translationPoint4, targetOrientations.get(MissionTarget.PLAN2_CAP_A4));
                 break;
         }
 
