@@ -134,14 +134,6 @@ public class ObjectDetector {
     }
 
 
-    /**
-     * กรองการคาดการณ์ของโมเดลตาม Confidence Threshold และเตรียมข้อมูลสำหรับ NMS
-     *
-     * @param output ผลลัพธ์ดิบจากโมเดล TFLite มีรูปร่าง [1, 15, 8400] (ตามที่กำหนดค่าคงที่)
-     * @param originalWidth ความกว้างของรูปภาพต้นฉบับ
-     * @param originalHeight ความสูงของรูปภาพต้นฉบับ
-     * @return List ของ Map ที่แต่ละ Map เป็นการตรวจจับที่ผ่าน NMS แล้ว (มี confidence, classId, className)
-     */
     private List<Map<String, Object>> filterConfidenceThreshold(float[][][] output, int originalWidth, int originalHeight) {
         Log.i(TAG, "filterConfidenceThreshold method started for raw output processing.");
 
@@ -163,7 +155,7 @@ public class ObjectDetector {
         final int CLASS_PROBS_START_IDX = 4; // Class probabilities เริ่มต้นจากดัชนีที่ 4
 
         // จำนวนคลาสคือ จำนวนฟีเจอร์ทั้งหมด (15) - พิกัด BBox (4)
-        final int NUM_CLASSES = OUTPUT_FEATURES_PER_PROPOSAL - CLASS_PROBS_START_IDX; // ควรจะเป็น 15 - 4 = 11
+        final int NUM_CLASSES = OUTPUT_FEATURES_PER_PROPOSAL - CLASS_PROBS_START_IDX;
 
         if (LABELS.length != NUM_CLASSES) {
             Log.e(TAG, "LABELS array size (" + LABELS.length + ") does not match calculated NUM_CLASSES (" + NUM_CLASSES + "). Check LABELS definition.");

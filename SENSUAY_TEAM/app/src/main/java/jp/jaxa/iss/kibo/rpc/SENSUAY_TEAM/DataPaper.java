@@ -6,7 +6,10 @@ import gov.nasa.arc.astrobee.Kinematics;
 import gov.nasa.arc.astrobee.types.Point;
 import gov.nasa.arc.astrobee.types.Quaternion;
 
+import org.opencv.calib3d.Calib3d;
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -30,11 +33,9 @@ public class DataPaper {
     private Quaternion quaternionNow;
     private Point pointPaper;
     private List<Mat> keepcorners;
-    private double xAruco;
-    private double yAruco;
 
     // --- Constructors & Other Methods... ---
-    public DataPaper(Mat captureImage, Mat backupImage, boolean isSuccess, int paperNumber, int arucoId, double[] rvec, double[] tvec, List<Mat> keepcorners ,Kinematics pos, Quaternion qnow) {
+    public DataPaper(Mat captureImage, Mat backupImage, boolean isSuccess, int paperNumber, int arucoId, double[] rvec, double[] tvec, List<Mat> keepcorners, Kinematics pos, Quaternion qnow) {
 
         this.captureImage = captureImage;
         this.backupImage = backupImage;
@@ -45,7 +46,6 @@ public class DataPaper {
         this.posNow = pos;
         this.quaternionNow = qnow;
         this.keepcorners = keepcorners;
-        calculateArucoCenter();
 
         if (rvec != null && rvec.length == 3) {
             this.rvec = new double[3];
@@ -60,7 +60,7 @@ public class DataPaper {
         } else {
             this.tvec = new double[]{0, 0, 0};
         }
-        this.pointPaper = calculateWorldPoint();
+        this.pointPaper = FindPointPaper();
         logDataToLogcat("ShowDataPaper");
     }
 
@@ -173,14 +173,6 @@ public class DataPaper {
         this.pointPaper = pointPaper;
     }
 
-    public double getxAruco() {
-        return xAruco;
-    }
-
-    public double getyAruco() {
-        return yAruco;
-    }
-
     public List<Mat> getKeepcorners() {
         return keepcorners;
     }
@@ -190,92 +182,39 @@ public class DataPaper {
         return "DataPaper{...}";
     }
 
-    private Quaternion multiplyQuaternions(Quaternion qA, Quaternion qB) {
-        float wA = qA.getW(), xA = qA.getX(), yA = qA.getY(), zA = qA.getZ();
-        float wB = qB.getW(), xB = qB.getX(), yB = qB.getY(), zB = qB.getZ();
+    // แนะนำให้ประกาศ TAG ไว้ที่ด้านบนของคลาสเพื่อความเป็นระเบียบ
+    private static final String TAG = "WorldPointCalcs";
 
-        float w_res = wA * wB - xA * xB - yA * yB - zA * zB;
-        float x_res = wA * xB + xA * wB + yA * zB - zA * yB;
-        float y_res = wA * yB - xA * zB + yA * wB + zA * xA;
-        float z_res = wA * zB + xA * yB - yA * xA + zA * wB;
+    private Point FindPointPaper() {
 
-        return new Quaternion(x_res, y_res, z_res, w_res);
-    }
+        double NewX;
+        double NewY;
+        double NewZ;
 
-    private Quaternion getQuaternionConjugate(Quaternion q) {
-        return new Quaternion(-q.getX(), -q.getY(), -q.getZ(), q.getW());
-    }
+        if ( paperNumber == 1) {
 
-    private Point calculateWorldPoint() {
+            double[] NewTvec = {tvec[0], tvec[2], tvec[1]};
+            NewX = posNow.getPosition().getX() + NewTvec[0];
+            NewY = -10.58;
+            NewZ = posNow.getPosition().getZ() + NewTvec[2];
 
-        // 1. ดึงข้อมูลที่จำเป็นออกมา
-        // ทิศทางของหุ่นยนต์ในพิกัดโลก
-        Quaternion cameraQuaternion = this.getQuaternionNow();
-        // ตำแหน่งของหุ่นยนต์ในพิกัดโลก
-        Point cameraPosition = this.posNow.getPosition();
-        // เวกเตอร์จากกล้องไปยัง ArUco marker (ในระบบพิกัดของ OpenCV)
-        double[] tvecOpenCV = this.getTvec();
+        } else if ( paperNumber == 2 || paperNumber == 3){
 
-        // 2. *** ขั้นตอนสำคัญ: จัดแนวแกนของ tvec ***
-        // แปลงเวกเตอร์ tvec จากระบบพิกัด OpenCV ให้สอดคล้องกับแกนของพิกัดโลก
-        // - tvec_Z (ไปข้างหน้า) ของ OpenCV คือแกน +X ของโลก
-        // - tvec_X (ไปทางขวา) ของ OpenCV คือแกน +Y ของโลก
-        // - tvec_Y (ชี้ลง) ของ OpenCV คือแกน -Z ของโลก (เพราะ +Z ของโลกคือชี้ขึ้น)
-        double alignedX =  tvecOpenCV[2]; // World X = OpenCV Z
-        double alignedY =  tvecOpenCV[0]; // World Y = OpenCV X
-        double alignedZ = -tvecOpenCV[1]; // World Z = - (OpenCV Y)
+            double[] NewTvec = {tvec[1], tvec[0], tvec[2]};
+            NewX = posNow.getPosition().getX() + NewTvec[0];
+            NewY = posNow.getPosition().getY() + NewTvec[1];
+            NewZ = 3.76203;
 
-        // 3. สร้าง Pure Quaternion (p') จากเวกเตอร์ที่จัดแนวแกนแล้ว
-        Quaternion p_aligned = new Quaternion(
-                (float) alignedX,
-                (float) alignedY,
-                (float) alignedZ,
-                0f
-        );
+        } else {
 
-        // 4. หมุนเวกเตอร์ p' ด้วยทิศทางของหุ่นยนต์ (cameraQuaternion)
-        // โดยใช้สูตรมาตรฐาน: v_rotated = q * v * q_conjugate
-        Quaternion cameraQuaternion_conjugate = getQuaternionConjugate(cameraQuaternion);
-        Quaternion temp_rotated = multiplyQuaternions(cameraQuaternion, p_aligned);
-        Quaternion p_rotated = multiplyQuaternions(temp_rotated, cameraQuaternion_conjugate);
+            double[] NewTvec = {tvec[2], -1 * tvec[0], tvec[1]};
+            NewX = 9.886984;
+            NewY = posNow.getPosition().getY() + NewTvec[1];
+            NewZ = posNow.getPosition().getZ() + NewTvec[2];
 
-        // 5. นำเวกเตอร์ผลลัพธ์ที่หมุนแล้วไปบวกกับตำแหน่งของหุ่นยนต์
-        // เพื่อให้ได้ตำแหน่งของ ArUco marker ในพิกัดโลก
-        double worldX = cameraPosition.getX() + p_rotated.getX();
-        double worldY = cameraPosition.getY() + p_rotated.getY();
-        double worldZ = cameraPosition.getZ() + p_rotated.getZ();
-
-        return new Point(worldX, worldY, worldZ);
-    }
-
-    private void calculateArucoCenter() {
-        //-- ตรวจสอบว่ามีข้อมูลมุมอยู่จริงและไม่ว่างเปล่า
-        if (this.keepcorners == null || this.keepcorners.isEmpty()) {
-            this.xAruco = 0;
-            this.yAruco = 0;
-            return;
         }
 
-        //-- ดึงข้อมูลมุมของ Marker ตัวแรก
-        Mat corners = this.keepcorners.get(0);
-
-        //-- ตรวจสอบว่ามี 4 มุมครบถ้วน
-        if (corners.total() < 4) {
-            this.xAruco = 0;
-            this.yAruco = 0;
-            return;
-        }
-
-        //-- ดึงพิกัด (x, y) ของแต่ละมุม
-        // .get(row, col) จะคืนค่า double[2] {x, y}
-        double[] corner1 = corners.get(0, 0); // Top-left
-        double[] corner2 = corners.get(0, 1); // Top-right
-        double[] corner3 = corners.get(0, 2); // Bottom-right
-        double[] corner4 = corners.get(0, 3); // Bottom-left
-
-        //-- คำนวณค่าเฉลี่ยตามสมการของคุณ
-        this.xAruco = (corner1[0] + corner2[0] + corner3[0] + corner4[0]) / 4.0;
-        this.yAruco = (corner1[1] + corner2[1] + corner3[1] + corner4[1]) / 4.0;
+        return new Point();
     }
 
     public void logDataToLogcat(String tag) {
@@ -295,7 +234,6 @@ public class DataPaper {
         Log.i(tag, "rvec: " + Arrays.toString(rvec));
         Log.i(tag, "tvec: " + Arrays.toString(tvec));
         Log.i(tag, "pointPaper: " + (pointPaper != null ? pointPaper.toString() : "null"));
-        Log.i(tag, String.format("Aruco Center (x, y): (%.2f, %.2f)", xAruco, yAruco));
 
         // ข้อมูลตำแหน่งของหุ่นยนต์
         Log.i(tag, "posNow: " + (posNow != null ? posNow.toString() : "null"));
@@ -311,7 +249,6 @@ public class DataPaper {
         // พิมพ์ Footer
         Log.i(tag, "===================================");
     }
-
 
 
 }
