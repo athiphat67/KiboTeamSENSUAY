@@ -186,35 +186,28 @@ public class DataPaper {
     }
 
     public void logDataToLogcat(String tag) {
-        // พิมพ์ Header เพื่อให้แยกแยะข้อมูลได้ง่ายใน Logcat
         Log.i(tag, "========== DataPaper Log ==========");
 
-        // ข้อมูลสถานะและความสำเร็จ
         Log.i(tag, "isSuccess: " + isSuccess);
         Log.i(tag, "statusMessage: '" + statusMessage + "'");
 
-        // ข้อมูลเกี่ยวกับเป้าหมาย
         Log.i(tag, "paperNumber: " + paperNumber);
         Log.i(tag, "arucoId: " + arucoId);
         Log.i(tag, "targetItem: '" + targetItem + "'");
 
-        // ข้อมูล Pose และตำแหน่ง
         Log.i(tag, "rvec: " + Arrays.toString(rvec));
         Log.i(tag, "tvec: " + Arrays.toString(tvec));
         Log.i(tag, "pointPaper: " + (pointPaper != null ? pointPaper.toString() : "null"));
 
-        // ข้อมูลตำแหน่งของหุ่นยนต์
         Log.i(tag, "posNow: " + (posNow != null ? posNow.toString() : "null"));
         Log.i(tag, "quaternionNow: " + (quaternionNow != null ? quaternionNow.toString() : "null"));
 
-        // ข้อมูลสรุปของรูปภาพ
         String captureInfo = (captureImage != null) ? "Mat[width=" + captureImage.width() + ", height=" + captureImage.height() + "]" : "null";
         Log.i(tag, "captureImage: " + captureInfo);
 
         String cornersInfo = (keepcorners != null) ? "List<Mat>[size=" + keepcorners.size() + "]" : "null";
         Log.i(tag, "keepcorners: " + cornersInfo);
 
-        // พิมพ์ Footer
         Log.i(tag, "===================================");
     }
 
