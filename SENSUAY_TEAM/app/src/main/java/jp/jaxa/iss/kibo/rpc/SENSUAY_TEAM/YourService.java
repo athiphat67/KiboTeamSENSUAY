@@ -41,7 +41,6 @@ public class YourService extends KiboRpcService {
     ArrayList<List<Map<String, Object>>> resultList = new ArrayList<>();
     ArrayList<DataPaper> ListDataPaper = new ArrayList<>();
 
-    // enum class ระบุชื่อจุด
     private enum MissionTarget {
         PLAN2_CAP_A1,
         PLAN2_CAP_A23,
@@ -49,11 +48,9 @@ public class YourService extends KiboRpcService {
         PLAN2_ASTRO_POS
     }
 
-    // Maps เก็บตำแหน่งและทิศทาง
     private Map<MissionTarget, Point> targetPositions;
     private Map<MissionTarget, Quaternion> targetOrientations;
 
-    // Constructor ที่สร้างใให้ Map มีการเก็บข้อมูลแบบ Hashmap() ลองศึกษาดูนิดนึงก็ได้หรือปล่อยผ่าน
     public YourService() {
         targetPositions = new HashMap<>();
         targetOrientations = new HashMap<>();
@@ -113,10 +110,10 @@ public class YourService extends KiboRpcService {
 
         // Add องศารอบแกนหมุนไปที่ชื่อจุด
         // Quaternion (pitch,roll,yaw)
-        targetOrientations.put(MissionTarget.PLAN2_CAP_A1, eulerToQuaternion(-15, 0,-80));
-        targetOrientations.put(MissionTarget.PLAN2_CAP_A23, eulerToQuaternion(90,0,0));
-        targetOrientations.put(MissionTarget.PLAN2_CAP_A4, eulerToQuaternion(-5,0,180));
-        targetOrientations.put(MissionTarget.PLAN2_ASTRO_POS, eulerToQuaternion(0,0,90));
+        targetOrientations.put(MissionTarget.PLAN2_CAP_A1, eulerToQuaternion(-15, 0, -80));
+        targetOrientations.put(MissionTarget.PLAN2_CAP_A23, eulerToQuaternion(90, 0, 0));
+        targetOrientations.put(MissionTarget.PLAN2_CAP_A4, eulerToQuaternion(-5, 0, 180));
+        targetOrientations.put(MissionTarget.PLAN2_ASTRO_POS, eulerToQuaternion(0, 0, 90));
 
         // move astrobee ไปที่จุดบน oasis 2 พร้อมหมุน astrobee แล้วถ่ายภาพ
         try {
@@ -276,28 +273,27 @@ public class YourService extends KiboRpcService {
 
         if (Inputpaper == 2) {
 
-            Mat leftImg = blackOutHalfImage(Cam, 2);
+            Mat leftImg = blackOutHalfImage(imgUndistort, 2);
             Aruco.detectMarkers(leftImg, Dict, keepcorners, keepids);
             Aruco.estimatePoseSingleMarkers(keepcorners, ARUCO_LEN, cameraMatrix, dstMatrix, keeprvecs, keeptvecs);
 
         } else if (Inputpaper == 3) {
 
-            Mat rightImg = blackOutHalfImage(Cam, 3);
+            Mat rightImg = blackOutHalfImage(imgUndistort, 3);
             Aruco.detectMarkers(rightImg, Dict, keepcorners, keepids);
             Aruco.estimatePoseSingleMarkers(keepcorners, ARUCO_LEN, cameraMatrix, dstMatrix, keeprvecs, keeptvecs);
 
         } else {
-            Aruco.detectMarkers(Cam, Dict, keepcorners, keepids);
+            Aruco.detectMarkers(imgUndistort, Dict, keepcorners, keepids);
             Aruco.estimatePoseSingleMarkers(keepcorners, ARUCO_LEN, cameraMatrix, dstMatrix, keeprvecs, keeptvecs);
 
-            api.saveMatImage(Cam, "imgNormal_" + Inputpaper + ".png");
+            api.saveMatImage(imgUndistort, "imgNormal_" + Inputpaper + ".png");
 
         }
 
         keeprvecs.get(0, 0, rvec_array);
         keeptvecs.get(0, 0, tvec_array);
 
-        // คราวนี้แบ่งกรอบภาพซ้าย/ขวา ตามค่า paper
         int wCam = imgUndistort.cols();
         int hCam = imgUndistort.rows();
         int halfWidth = wCam / 2;
@@ -584,76 +580,74 @@ public class YourService extends KiboRpcService {
 
         Kinematics posNow = api.getRobotKinematics();
 
-        return new DataPaper(imgResult, imgRotation, true, Inputpaper, arucoid, rvec_array, tvec_array, keepcorners,posNow, quaternionNow);
+        return new DataPaper(imgResult, imgRotation, true, Inputpaper, arucoid, rvec_array, tvec_array, keepcorners, posNow, quaternionNow);
     }
 
     private Mat blackOutHalfImage(Mat img, int paper) {
-        // 1. ดึงขนาดของรูปภาพ
+
         int width = img.width();   // 1280
         int height = img.height(); // 960
         int halfWidth = width / 2;
 
-        // 2. กำหนดสีดำและประเภทการวาด (แบบทึบ)
         Scalar blackColor = new Scalar(0, 0, 0);
         int thickness = Imgproc.FILLED; // หรือ -1 ก็ได้
 
-        // 3. สร้างเงื่อนไขตามค่า paper
         if (paper == 2) {
-            // ---> เติมสีดำที่ "ครึ่งขวา"
-            // กำหนดจุดเริ่มต้น (บนซ้ายของพื้นที่) และจุดสิ้นสุด (ล่างขวาของพื้นที่)
+
             org.opencv.core.Point topLeft = new org.opencv.core.Point(halfWidth, 0);
             org.opencv.core.Point bottomRight = new org.opencv.core.Point(width, height);
 
             Imgproc.rectangle(img, topLeft, bottomRight, blackColor, thickness);
 
-            api.saveMatImage(img, "TestImgLeft.png");
+            api.saveMatImage(img, "imgUndistort_2.png");
 
         } else if (paper == 3) {
-            // ---> เติมสีดำที่ "ครึ่งซ้าย"
+
             org.opencv.core.Point topLeft = new org.opencv.core.Point(0, 0);
             org.opencv.core.Point bottomRight = new org.opencv.core.Point(halfWidth, height);
 
             Imgproc.rectangle(img, topLeft, bottomRight, blackColor, thickness);
-            api.saveMatImage(img, "TestImgRight.png");
+            api.saveMatImage(img, "imgUndistort_3.png");
         }
 
-        // หากค่า paper ไม่ใช่ 2 หรือ 3 ก็จะไม่ทำอะไรกับภาพ
-
-        // 4. คืนค่ารูปภาพที่แก้ไขแล้ว
         return img;
     }
 
 
-    public void moveToReportArea(int Area_num,DataPaper dataPaper) throws IOException {
+    public void moveToReportArea(int Area_num, DataPaper dataPaper) throws IOException {
         boolean reportPosition = false;
         double[] tvec = dataPaper.getTvec();
         double[] rvec = dataPaper.getRvec();
 
         switch (Area_num) {
             case 1:
-                double[] tvec1 = {tvec[0],tvec[2],tvec[1]};
+
+                double x1 = dataPaper.getPointPaper().getX();
+                double z1 = dataPaper.getPointPaper().getZ();
+
                 Point moveReportPoint1 = targetPositions.get(MissionTarget.PLAN2_CAP_A1);
-                Point translationPoint1 = new Point(moveReportPoint1.getX() + tvec1[0] ,-9.85, moveReportPoint1.getZ() + tvec1[2]);
+                Point translationPoint1 = new Point(x1, -9.85, z1);
                 reportPosition = moveToArea(translationPoint1, targetOrientations.get(MissionTarget.PLAN2_CAP_A1));
                 break;
-            case 2:
-                double[] tvec2 = {tvec[1],tvec[0],tvec[2]};
-                Point moveReportPoint2 =targetPositions.get(MissionTarget.PLAN2_CAP_A23);
-                Point translationPoint2 = new Point(moveReportPoint2.getX() + tvec2[0],moveReportPoint2.getY() + tvec2[1] , 4.57);
+
+            case 2 | 3:
+
+                double x23 = dataPaper.getPointPaper().getX();
+                double y23 = dataPaper.getPointPaper().getY();
+
+                Point moveReportPoint2 = targetPositions.get(MissionTarget.PLAN2_CAP_A23);
+                Point translationPoint2 = new Point(x23, y23, 4.57);
                 reportPosition = moveToArea(translationPoint2, targetOrientations.get(MissionTarget.PLAN2_CAP_A23));
                 break;
-            case 3:
-                double[] tvec3 = {tvec[1],tvec[0],tvec[2]};
-                Point moveReportPoint3 = targetPositions.get(MissionTarget.PLAN2_CAP_A23);
-                Point translationPoint3 = new Point(moveReportPoint3.getX() + tvec3[0], moveReportPoint3.getY() + tvec3[1], 4.57);
-                reportPosition = moveToArea(translationPoint3, targetOrientations.get(MissionTarget.PLAN2_CAP_A23));
-                break;
-            case 4:
-                double[] tvec4 = {tvec[2],-1 * tvec[0], tvec[1]};
-                Point moveReportPoint4 =targetPositions.get(MissionTarget.PLAN2_CAP_A4);
-                Point translationPoint4 = new Point(10.58, moveReportPoint4.getY() + tvec4[1], moveReportPoint4.getZ() +tvec4[2]);
-                reportPosition = moveToArea(translationPoint4, targetOrientations.get(MissionTarget.PLAN2_CAP_A4));
 
+            case 4:
+
+                double z4 = dataPaper.getPointPaper().getZ();
+                double y4 = dataPaper.getPointPaper().getY();
+
+                Point moveReportPoint4 = targetPositions.get(MissionTarget.PLAN2_CAP_A4);
+                Point translationPoint4 = new Point(10.58, y4, z4);
+                reportPosition = moveToArea(translationPoint4, targetOrientations.get(MissionTarget.PLAN2_CAP_A4));
                 break;
         }
 
@@ -666,14 +660,10 @@ public class YourService extends KiboRpcService {
 
         Log.i("DetectionResults", "กำลังแสดงผลลัพธ์การตรวจจับจาก " + resultList.size() + " รูปภาพ.");
 
-        // วนลูปผ่านแต่ละชุดของผลลัพธ์ (แต่ละรูปภาพ)
-        // ใช้ resultList.size() แทน resultList.size() - 1 เพื่อให้รวมรูปภาพสุดท้ายด้วย
         for (int imageIndex = 0; imageIndex < resultList.size(); imageIndex++) {
             List<Map<String, Object>> detectionsForImage = resultList.get(imageIndex);
             DataPaper dataPaper = ListDataPaper.get(imageIndex);
 
-            // สร้าง Map เพื่อเก็บจำนวนของแต่ละคลาสในรูปภาพปัจจุบัน
-            // Key คือ className (String), Value คือจำนวน (Integer)
             Map<String, Integer> itemCounts = new HashMap<>();
 
             Log.i("DetectionResults", "--- ผลลัพธ์สำหรับรูปภาพที่ " + (imageIndex + 1) + " ---");
@@ -681,13 +671,9 @@ public class YourService extends KiboRpcService {
             if (detectionsForImage.isEmpty()) {
                 Log.i("DetectionResults", "    ไม่พบวัตถุใดๆ ในรูปภาพนี้");
 
-                // หากไม่พบวัตถุใดๆ อาจจะต้องส่งข้อมูลไปที่ API ด้วยค่า 0 หรือตามเงื่อนไขที่กำหนด
-                // ตัวอย่าง: api.setInfoArea(imageIndex + 1, "none", 0);
-                // หรือจะข้ามไปเลยก็ได้ถ้าไม่มีวัตถุ
             } else {
                 Log.i("DetectionResults", "    พบวัตถุทั้งหมด: " + detectionsForImage.size() + " ชิ้น (ก่อนรวม)");
 
-                // วนลูปผ่านแต่ละการตรวจจับภายในรูปภาพนั้นๆ เพื่อรวมจำนวนไอเท็ม
                 for (Map<String, Object> detection : detectionsForImage) {
                     String className = (String) detection.get("className");
 
@@ -695,12 +681,11 @@ public class YourService extends KiboRpcService {
                         dataPaper.setTargetItem(className);
                     }
 
-                    // เพิ่มจำนวนนับสำหรับคลาสนี้
                     itemCounts.put(className, itemCounts.getOrDefault(className, 0) + 1);
                 }
 
                 Log.i("DetectionResults", "    --- สรุปจำนวนไอเท็มที่ตรวจพบ ---");
-                // วนลูปผ่าน Map ที่เก็บจำนวนไอเท็ม เพื่อส่งข้อมูลไปที่ API และ Logcat
+
                 for (Map.Entry<String, Integer> entry : itemCounts.entrySet()) {
                     String itemName = entry.getKey();
 
@@ -750,7 +735,6 @@ public class YourService extends KiboRpcService {
 
         double[][] cameraParam = api.getNavCamIntrinsics();
 
-        // สร้าง Mat สำหรับ cameraMatrix (3×3) และ dstMatrix (1×5) ด้วยชนิดข้อมูล double
         Mat cameraMatrix = new Mat(3, 3, CvType.CV_64F);
         Mat dstMatrix = new Mat(1, 5, CvType.CV_64F);
         cameraMatrix.put(0, 0, cameraParam[0]);
