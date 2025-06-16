@@ -214,7 +214,7 @@ public class DataPaper {
 
         }
 
-        return new Point();
+        return new Point(NewX, NewY, NewZ);
     }
 
     public void logDataToLogcat(String tag) {
