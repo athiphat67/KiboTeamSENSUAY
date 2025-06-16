@@ -113,12 +113,10 @@ public class YourService extends KiboRpcService {
 
         // Add องศารอบแกนหมุนไปที่ชื่อจุด
         // Quaternion (pitch,roll,yaw)
-
         targetOrientations.put(MissionTarget.PLAN2_CAP_A1, eulerToQuaternion(-15, 0,-80));
         targetOrientations.put(MissionTarget.PLAN2_CAP_A23, eulerToQuaternion(90,0,0));
         targetOrientations.put(MissionTarget.PLAN2_CAP_A4, eulerToQuaternion(-5,0,180));
         targetOrientations.put(MissionTarget.PLAN2_ASTRO_POS, eulerToQuaternion(0,0,90));
-
 
         // move astrobee ไปที่จุดบน oasis 2 พร้อมหมุน astrobee แล้วถ่ายภาพ
         try {
@@ -193,7 +191,7 @@ public class YourService extends KiboRpcService {
             ReportAllArea(resultList);
             api.reportRoundingCompletion();
 
-            SystemClock.sleep(5000);
+            SystemClock.sleep(2000);
 
             DataPaper result5 = CapturePaper(5, targetOrientations.get(MissionTarget.PLAN2_ASTRO_POS));
             ListDataPaper.add(result5);
@@ -431,7 +429,6 @@ public class YourService extends KiboRpcService {
             cropWidth = (cropWidth % 2 == 0) ? cropWidth : cropWidth + 1;
             cropHeight = (cropHeight % 2 == 0) ? cropHeight : cropHeight + 1;
 
-
             // คำนวณตำแหน่งเริ่มต้นของการ Crop
             int x = (int) (current_aruco_center_x - cropWidth / 2);
             int y = (int) (current_aruco_center_y - cropHeight / 2);
@@ -626,86 +623,37 @@ public class YourService extends KiboRpcService {
         return img;
     }
 
-    private void reportArea1(double[] tvec, DataPaper dataPaper) throws IOException {
-        // เริ่มต้นเมธอด
-        Log.i("ReportArea1", "Starting reportArea1 method.");
 
-        double x = dataPaper.getPointPaper().getX();
-        double z = dataPaper.getPointPaper().getZ();
-
-        Point reportPoint = new Point(x, -9.75, z);
-        boolean reportPosition = moveToArea(reportPoint, targetOrientations.get(MissionTarget.PLAN2_CAP_A1));
-
-        // แจ้งว่าการเดินทางเสร็จสิ้น
-        Log.i("ReportArea1", "Movement to report point completed for Area 1.");
-    }
-
-    private void reportArea2(double[] tvec, DataPaper dataPaper) throws IOException {
-        // เริ่มต้นเมธอด
-        Log.i("ReportArea2", "Starting reportArea2 method.");
-
-        double x = dataPaper.getPointPaper().getX();
-        double y = dataPaper.getPointPaper().getY();
-
-        Point reportPoint = new Point(x, y, 4.55);
-        boolean reportPosition = moveToArea(reportPoint, targetOrientations.get(MissionTarget.PLAN2_CAP_A23));
-
-        // แจ้งว่าการเดินทางเสร็จสิ้น
-        Log.i("ReportArea2", "Movement to report point completed for Area 2.");
-    }
-
-    private void reportArea3(double[] tvec, DataPaper dataPaper) throws IOException {
-        // เริ่มต้นเมธอด
-        Log.i("ReportArea3", "Starting reportArea3 method.");
-
-        double x = dataPaper.getPointPaper().getX();
-        double y = dataPaper.getPointPaper().getY();
-
-        Point reportPoint = new Point(x, y, 4.55);
-
-        boolean reportPosition = moveToArea(reportPoint, targetOrientations.get(MissionTarget.PLAN2_CAP_A23));
-
-        // แจ้งว่าการเดินทางเสร็จสิ้น
-        Log.i("ReportArea3", "Movement to report point completed for Area 3.");
-    }
-
-    private void reportArea4(double[] tvec, DataPaper dataPaper) throws IOException {
-        // เริ่มต้นเมธอด
-        Log.i("ReportArea4", "Starting reportArea4 method.");
-
-        double y = dataPaper.getPointPaper().getY();
-        double z = dataPaper.getPointPaper().getZ();
-
-        Point reportPoint = new Point(10.56, y, z);
-
-        boolean reportPosition = moveToArea(reportPoint, targetOrientations.get(MissionTarget.PLAN2_CAP_A4));
-
-
-        // แจ้งว่าการเดินทางเสร็จสิ้น
-        Log.i("ReportArea4", "Movement to report point completed for Area 4.");
-    }
-
-    public void moveToReportArea(int Area_num, DataPaper dataPaper) throws IOException {
-
-        Point point = dataPaper.getPosNow().getPosition();
-
-        Log.i("Point :", "x : " + point.getX() + " y : " + point.getY() + " z : " + point.getZ());
-        Log.i("Quaternion", dataPaper.getQuaternionNow().toString());
-
-        Log.i("PointPaper", "x : " + dataPaper.getPointPaper().getX() + " y : " + dataPaper.getPointPaper().getY() + " z : " + dataPaper.getPointPaper().getZ());
+    public void moveToReportArea(int Area_num,DataPaper dataPaper) throws IOException {
+        boolean reportPosition = false;
+        double[] tvec = dataPaper.getTvec();
+        double[] rvec = dataPaper.getRvec();
 
         switch (Area_num) {
             case 1:
-                reportArea1(dataPaper.getTvec(), dataPaper);
+                double[] tvec1 = {tvec[0],tvec[2],tvec[1]};
+                Point moveReportPoint1 = targetPositions.get(MissionTarget.PLAN2_CAP_A1);
+                Point translationPoint1 = new Point(moveReportPoint1.getX() + tvec1[0] ,-9.85, moveReportPoint1.getZ() + tvec1[2]);
+                reportPosition = moveToArea(translationPoint1, targetOrientations.get(MissionTarget.PLAN2_CAP_A1));
                 break;
             case 2:
-                reportArea2(dataPaper.getTvec(), dataPaper);
+                double[] tvec2 = {tvec[1],tvec[0],tvec[2]};
+                Point moveReportPoint2 =targetPositions.get(MissionTarget.PLAN2_CAP_A23);
+                Point translationPoint2 = new Point(moveReportPoint2.getX() + tvec2[0],moveReportPoint2.getY() + tvec2[1] , 4.57);
+                reportPosition = moveToArea(translationPoint2, targetOrientations.get(MissionTarget.PLAN2_CAP_A23));
                 break;
             case 3:
-                reportArea3(dataPaper.getTvec(), dataPaper);
+                double[] tvec3 = {tvec[1],tvec[0],tvec[2]};
+                Point moveReportPoint3 = targetPositions.get(MissionTarget.PLAN2_CAP_A23);
+                Point translationPoint3 = new Point(moveReportPoint3.getX() + tvec3[0], moveReportPoint3.getY() + tvec3[1], 4.57);
+                reportPosition = moveToArea(translationPoint3, targetOrientations.get(MissionTarget.PLAN2_CAP_A23));
                 break;
             case 4:
-                reportArea4(dataPaper.getTvec(), dataPaper);
+                double[] tvec4 = {tvec[2],-1 * tvec[0], tvec[1]};
+                Point moveReportPoint4 =targetPositions.get(MissionTarget.PLAN2_CAP_A4);
+                Point translationPoint4 = new Point(10.58, moveReportPoint4.getY() + tvec4[1], moveReportPoint4.getZ() +tvec4[2]);
+                reportPosition = moveToArea(translationPoint4, targetOrientations.get(MissionTarget.PLAN2_CAP_A4));
+
                 break;
         }
 
