@@ -222,7 +222,7 @@ public class DataPaper {
             double[] NewTvec = {tvec[0], tvec[2], tvec[1]};
             NewX = posNow.getPosition().getX() + NewTvec[0];
             NewY = -10.58;
-            NewZ = posNow.getPosition().getZ() + NewTvec[2];
+            NewZ = posNow.getPosition().getZ() + NewTvec[2] * 0.8;
 
         } else if ( paperNumber == 2 || paperNumber == 3){
 
@@ -236,7 +236,7 @@ public class DataPaper {
             double[] NewTvec = {tvec[2], -1 * tvec[0], tvec[1]};
             NewX = 9.886984;
             NewY = posNow.getPosition().getY() + NewTvec[1];
-            NewZ = posNow.getPosition().getZ() + NewTvec[2];
+            NewZ = posNow.getPosition().getZ() + NewTvec[2] * 0.8;
 
         }
 

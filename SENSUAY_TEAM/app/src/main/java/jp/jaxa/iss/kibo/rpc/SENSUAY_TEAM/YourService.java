@@ -613,7 +613,6 @@ public class YourService extends KiboRpcService {
         return img;
     }
 
-
     public void moveToReportArea(int Area_num, DataPaper dataPaper) throws IOException {
         boolean reportPosition = false;
         double[] tvec = dataPaper.getTvec();
@@ -625,19 +624,25 @@ public class YourService extends KiboRpcService {
                 double x1 = dataPaper.getPointPaper().getX();
                 double z1 = dataPaper.getPointPaper().getZ();
 
-                Point moveReportPoint1 = targetPositions.get(MissionTarget.PLAN2_CAP_A1);
                 Point translationPoint1 = new Point(x1, -9.85, z1);
                 reportPosition = moveToArea(translationPoint1, targetOrientations.get(MissionTarget.PLAN2_CAP_A1));
                 break;
 
-            case 2 | 3:
+            case 2:
+                double x2 = dataPaper.getPointPaper().getX();
+                double y2 = dataPaper.getPointPaper().getY();
 
-                double x23 = dataPaper.getPointPaper().getX();
-                double y23 = dataPaper.getPointPaper().getY();
-
-                Point moveReportPoint2 = targetPositions.get(MissionTarget.PLAN2_CAP_A23);
-                Point translationPoint2 = new Point(x23, y23, 4.57);
+                Point translationPoint2 = new Point(x2, y2, 4.57);
                 reportPosition = moveToArea(translationPoint2, targetOrientations.get(MissionTarget.PLAN2_CAP_A23));
+                break;
+
+            case 3:
+
+                double x3 = dataPaper.getPointPaper().getX();
+                double y3 = dataPaper.getPointPaper().getY();
+
+                Point translationPoint3 = new Point(x3, y3, 4.57);
+                reportPosition = moveToArea(translationPoint3, targetOrientations.get(MissionTarget.PLAN2_CAP_A23));
                 break;
 
             case 4:
@@ -645,13 +650,12 @@ public class YourService extends KiboRpcService {
                 double z4 = dataPaper.getPointPaper().getZ();
                 double y4 = dataPaper.getPointPaper().getY();
 
-                Point moveReportPoint4 = targetPositions.get(MissionTarget.PLAN2_CAP_A4);
-                Point translationPoint4 = new Point(10.58, y4, z4*0.8);
+                Point translationPoint4 = new Point(10.58, y4, z4);
                 reportPosition = moveToArea(translationPoint4, targetOrientations.get(MissionTarget.PLAN2_CAP_A4));
                 break;
         }
 
-        CaptureImgCheckBeforetakTargetItemsSnapshot();
+        CaptureImgCheckBeforeTakeTargetItemsSnapshot();
 
         api.takeTargetItemSnapshot();
     }
@@ -731,7 +735,7 @@ public class YourService extends KiboRpcService {
         return numpaper;
     }
 
-    private void CaptureImgCheckBeforetakTargetItemsSnapshot() {
+    private void CaptureImgCheckBeforeTakeTargetItemsSnapshot() {
 
         double[][] cameraParam = api.getNavCamIntrinsics();
 
