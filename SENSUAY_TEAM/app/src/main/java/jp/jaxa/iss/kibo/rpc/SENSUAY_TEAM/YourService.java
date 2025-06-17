@@ -641,12 +641,12 @@ public class YourService extends KiboRpcService {
                 break;
 
             case 4:
-
+            
                 double z4 = dataPaper.getPointPaper().getZ();
                 double y4 = dataPaper.getPointPaper().getY();
 
                 Point moveReportPoint4 = targetPositions.get(MissionTarget.PLAN2_CAP_A4);
-                Point translationPoint4 = new Point(10.58, y4, z4);
+                Point translationPoint4 = new Point(10.58, y4, z4*0.8);
                 reportPosition = moveToArea(translationPoint4, targetOrientations.get(MissionTarget.PLAN2_CAP_A4));
                 break;
         }
