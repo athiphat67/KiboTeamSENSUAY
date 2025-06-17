@@ -38,11 +38,11 @@ public class ObjectDetector {
 
     public ObjectDetector(Context context) {
         try {
-            MappedByteBuffer modelBuffer = FileUtil.loadMappedFile(context, "SensuayModelV3.tflite");
+            MappedByteBuffer modelBuffer = FileUtil.loadMappedFile(context, "SensuayModelV5.tflite");
             Interpreter.Options interpretOptions = new Interpreter.Options();
             interpretOptions.setNumThreads(2);
             this.interpreter = new Interpreter(modelBuffer, interpretOptions);
-            Log.i(TAG, "TFLite model loaded successfully: SensuayModelV3.tflite");
+            Log.i(TAG, "TFLite model loaded successfully: SensuayModelV5.tflite");
 
             this.LABELS = new String[]{"coin",
                     "compass",
