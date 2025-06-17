@@ -115,114 +115,66 @@ public class YourService extends KiboRpcService {
         targetOrientations.put(MissionTarget.PLAN2_CAP_A4, eulerToQuaternion(-5, 0, 180));
         targetOrientations.put(MissionTarget.PLAN2_ASTRO_POS, eulerToQuaternion(0, 0, 90));
 
-        // move astrobee ไปที่จุดบน oasis 2 พร้อมหมุน astrobee แล้วถ่ายภาพ
-        try {
-            Log.i("Mission", "Moving to Area 1 Capture Position...");
-            moveToArea(targetPositions.get(MissionTarget.PLAN2_CAP_A1), targetOrientations.get(MissionTarget.PLAN2_CAP_A1));
-            DataPaper result1 = CapturePaper(1, targetOrientations.get(MissionTarget.PLAN2_CAP_A1));
+        // ---------------------------------- Test move Point1 ----------------------------------------------------//
+        //------------------------- setup -----------------------------------//
+        double[][] cameraNavParam = api.getNavCamIntrinsics();
+        double[][] cameraDockParam = api.getDockCamIntrinsics();
+        Mat NavcameraMatrix = new Mat(3, 3, CvType.CV_64F);
+        Mat NavdstMatrix = new Mat(1, 5, CvType.CV_64F);
+        NavcameraMatrix.put(0, 0, cameraNavParam[0]);
+        NavdstMatrix.put(0, 0, cameraNavParam[1]);
+        Mat DockcameraMatrix = new Mat(3, 3, CvType.CV_64F);
+        Mat DockdstMatrix = new Mat(1, 5, CvType.CV_64F);
+        DockcameraMatrix.put(0, 0, cameraDockParam[0]);
+        DockdstMatrix.put(0, 0, cameraDockParam[1]);
+        // ---------------------- end setup ----------------------------//
 
-            Mat imgResult = result1.getCaptureImage();
-            api.saveMatImage(imgResult, "imgArea_" + 1 + ".png");
-            ListDataPaper.add(result1);
+        // ------------ Add Move Point 1 right here vvv ------------------//
 
-            SystemClock.sleep(2000);
+        // ------------------------ ^^^ --------------------------------//
+        // -------------------------------------------------------------//
+        Mat NavCam = api.getMatNavCam();
+        Mat DockCam = api.getMatDockCam();
+        api.saveMatImage(NavCam, "NavCamNormal_Area1.png");// สลับเลขเอาถ้าอยากย้ายกล้อง
+        api.saveMatImage(DockCam, "DockCamNormal_Area2.png");// สลับเลขเอาถ้าอยากย้ายกล้อง
+        Mat NavCamUndis = new Mat();
+        Mat DockcamUdis = new Mat();
+        Calib3d.undistort(NavCam, NavCamUndis, NavcameraMatrix, NavdstMatrix);
+        Calib3d.undistort(DockCam, DockcamUdis, DockcameraMatrix, DockdstMatrix);
+        api.saveMatImage(NavCamUndis, "NavCamUndis_Area1.png");// สลับเลขเอาถ้าอยากย้ายกล้อง
+        api.saveMatImage(DockcamUdis, "DockCamUndis_Area2.png");// สลับเลขเอาถ้าอยากย้ายกล้อง
+        // ---------------------- end Save Img  ----------------------------//
 
-            ObjectDetector detector = new ObjectDetector(this);
-            resultList.add(detector.processImage(result1));
+        // ------------ Add Move Point 2 right here vvv ------------------//
 
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        // ------------------------ ^^^ --------------------------------//
+        // -------------------------------------------------------------//
+        NavCam = api.getMatNavCam();
+        DockCam = api.getMatDockCam();
+        api.saveMatImage(NavCam, "NavCamNormal_Area3.png");// สลับเลขเอาถ้าอยากย้ายกล้อง
+        api.saveMatImage(DockCam, "DockCamNormal_Area4.png");// สลับเลขเอาถ้าอยากย้ายกล้อง
+        NavCamUndis = new Mat();
+        DockcamUdis = new Mat();
+        Calib3d.undistort(NavCam, NavCamUndis, NavcameraMatrix, NavdstMatrix);
+        Calib3d.undistort(DockCam, DockcamUdis, DockcameraMatrix, DockdstMatrix);
+        api.saveMatImage(NavCamUndis, "NavCamUndis_Area3.png");// สลับเลขเอาถ้าอยากย้ายกล้อง
+        api.saveMatImage(DockcamUdis, "DockCamUndis_Point4.png"); // สลับเลขเอาถ้าอยากย้ายกล้อง
+        // ---------------------- end Save Img  ----------------------------//
 
-        // area 2,3 capture
-        // move astrobee ไปที่จุดกึ่งกลางระหว่าง oasis และ เคลื่อนที่ขึ้นตามแนวแกน -z เพื่อถ่ายรูปห่างจากระนาบเป็นระยา ~115cm
-        try {
-            Log.i("Mission", "Moving to Area 2,3 Capture Position...");
-            moveToArea(targetPositions.get(MissionTarget.PLAN2_CAP_A23), targetOrientations.get(MissionTarget.PLAN2_CAP_A23));
-            ObjectDetector detector = new ObjectDetector(this);
+        // ------------ Add Move Point astronaut right here vvv ------------//
 
-            // delay astrobee ค้างไว้ 4000 millisecond==4 sec เพื่อเช็คให้ชัวร์ว่านิ่งจริงๆแล้วค่อยถ่ายภาพ
-            SystemClock.sleep(3000);
-
-            DataPaper result2 = CapturePaper(2, targetOrientations.get(MissionTarget.PLAN2_CAP_A23));
-            ListDataPaper.add(result2);
-            Mat imgResult2 = result2.getCaptureImage();
-            api.saveMatImage(imgResult2, "imgArea_" + 2 + ".png");
-            resultList.add(detector.processImage(result2));
-
-            DataPaper result3 = CapturePaper(3, targetOrientations.get(MissionTarget.PLAN2_CAP_A23));
-            ListDataPaper.add(result3);
-            Mat imgResult3 = result3.getCaptureImage();
-            api.saveMatImage(imgResult3, "imgArea_" + 3 + ".png");
-            resultList.add(detector.processImage(result3));
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-
-        // move to area 4
-        // move astrobee เข้า area 4 (ยังอยู่ใน oasis 4) แล้วกดกล้องลง ~10 degree (ลองไปดูที่ orientation)
-        try {
-            Log.i("Mission", "Moving to Area 4 Capture Position...");
-            moveToArea(targetPositions.get(MissionTarget.PLAN2_CAP_A4), targetOrientations.get(MissionTarget.PLAN2_CAP_A4));
-            ObjectDetector detector = new ObjectDetector(this);
-
-            SystemClock.sleep(2000);
-
-            DataPaper result4 = CapturePaper(4, targetOrientations.get(MissionTarget.PLAN2_CAP_A4));
-            ListDataPaper.add(result4);
-            Mat imgResult4 = result4.getCaptureImage();
-            api.saveMatImage(imgResult4, "imgArea_" + 4 + ".png");
-            resultList.add(detector.processImage(result4));
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        // move to astronaut
-        try {
-            Log.i("Mission", "Moving to Astronaut Interaction Position...");
-            moveToArea(targetPositions.get(MissionTarget.PLAN2_ASTRO_POS), targetOrientations.get(MissionTarget.PLAN2_ASTRO_POS));
-
-            ReportAllArea(resultList);
-            api.reportRoundingCompletion();
-
-            SystemClock.sleep(2000);
-
-            DataPaper result5 = CapturePaper(5, targetOrientations.get(MissionTarget.PLAN2_ASTRO_POS));
-            ListDataPaper.add(result5);
-            Mat imgResult5 = result5.getCaptureImage();
-            api.saveMatImage(imgResult5, "imgArea_" + 5 + ".png");
-
-            ObjectDetector detector = new ObjectDetector(this);
-            resultList.add(detector.processImage(result5));
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        api.notifyRecognitionItem();
-
-        int i = 1;
-        for (DataPaper obj : ListDataPaper) {
-            double[] rvec = obj.getRvec();
-            double[] tvec = obj.getTvec();
-            Log.i("Rvec", "rvec" + i + " : " + rvec[0] + " , " + rvec[1] + " , " + rvec[2]);
-            Log.i("Tvec", "tvec" + i + " : " + tvec[0] + " , " + tvec[1] + " , " + tvec[2]);
-            i++;
-        }
-
-        //move to targetArea
-        int NumberResultPaper = FindPaperOfTargetItems();
-        Log.i("MoveToTargetArea", "NUmberResultePaper: " + NumberResultPaper);
-        DataPaper resultPaper = ListDataPaper.get(NumberResultPaper - 1);
-        Log.i("MoveToTargetArea", "resultPaper :" + resultPaper.getPaperNumber());
-        try {
-            moveToReportArea(NumberResultPaper, resultPaper);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        // ------------------------ ^^^ --------------------------------//
+        // -------------------------------------------------------------//
+        NavCam = api.getMatNavCam();
+        DockCam = api.getMatDockCam();
+        api.saveMatImage(NavCam, "NavCamNormal_Area5.png");// สลับเลขเอาถ้าอยากย้ายกล้อง
+        api.saveMatImage(DockCam, "DockCamNormal_Area5.png");// สลับเลขเอาถ้าอยากย้ายกล้อง
+        NavCamUndis = new Mat();
+        DockcamUdis = new Mat();
+        Calib3d.undistort(NavCam, NavCamUndis, NavcameraMatrix, NavdstMatrix);
+        Calib3d.undistort(DockCam, DockcamUdis, DockcameraMatrix, DockdstMatrix);
+        api.saveMatImage(NavCamUndis, "NavCamUndis_Area5.png");// สลับเลขเอาถ้าอยากย้ายกล้อง
+        api.saveMatImage(DockcamUdis, "DockCamUndis_Area5.png");// สลับเลขเอาถ้าอยากย้ายกล้อง
 
         // Shutdown
         api.shutdownFactory();
@@ -612,7 +564,6 @@ public class YourService extends KiboRpcService {
 
         return img;
     }
-
 
     public void moveToReportArea(int Area_num, DataPaper dataPaper) throws IOException {
         boolean reportPosition = false;
