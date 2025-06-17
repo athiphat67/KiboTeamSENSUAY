@@ -219,6 +219,7 @@ public class YourService extends KiboRpcService {
         DataPaper resultPaper = ListDataPaper.get(NumberResultPaper - 1);
         Log.i("MoveToTargetArea", "resultPaper :" + resultPaper.getPaperNumber());
         try {
+
             moveToReportArea(NumberResultPaper, resultPaper);
         } catch (IOException e) {
             e.printStackTrace();
@@ -613,11 +614,9 @@ public class YourService extends KiboRpcService {
         return img;
     }
 
-
     public void moveToReportArea(int Area_num, DataPaper dataPaper) throws IOException {
+
         boolean reportPosition = false;
-        double[] tvec = dataPaper.getTvec();
-        double[] rvec = dataPaper.getRvec();
 
         switch (Area_num) {
             case 1:
@@ -625,32 +624,32 @@ public class YourService extends KiboRpcService {
                 double x1 = dataPaper.getPointPaper().getX();
                 double z1 = dataPaper.getPointPaper().getZ();
 
-                Point moveReportPoint1 = targetPositions.get(MissionTarget.PLAN2_CAP_A1);
-                Point translationPoint1 = new Point(x1, -9.85, z1);
+                Point translationPoint1 = new Point(x1 ,-9.85, z1);
                 reportPosition = moveToArea(translationPoint1, targetOrientations.get(MissionTarget.PLAN2_CAP_A1));
                 break;
 
-            case 2 | 3:
+            case 2:
 
-                double x23 = dataPaper.getPointPaper().getX();
-                double y23 = dataPaper.getPointPaper().getY();
+            case 3:
 
-                Point moveReportPoint2 = targetPositions.get(MissionTarget.PLAN2_CAP_A23);
-                Point translationPoint2 = new Point(x23, y23, 4.57);
+                double x2 = dataPaper.getPointPaper().getX();
+                double y2 = dataPaper.getPointPaper().getY();
+
+                Point translationPoint2 = new Point(x2,y2 , 4.57);
                 reportPosition = moveToArea(translationPoint2, targetOrientations.get(MissionTarget.PLAN2_CAP_A23));
                 break;
 
             case 4:
 
-                double z4 = dataPaper.getPointPaper().getZ();
                 double y4 = dataPaper.getPointPaper().getY();
+                double z4 = dataPaper.getPointPaper().getZ();
 
-                Point moveReportPoint4 = targetPositions.get(MissionTarget.PLAN2_CAP_A4);
                 Point translationPoint4 = new Point(10.58, y4, z4);
                 reportPosition = moveToArea(translationPoint4, targetOrientations.get(MissionTarget.PLAN2_CAP_A4));
                 break;
         }
 
+        SystemClock.sleep(1500);
         CaptureImgCheckBeforetakTargetItemsSnapshot();
 
         api.takeTargetItemSnapshot();
