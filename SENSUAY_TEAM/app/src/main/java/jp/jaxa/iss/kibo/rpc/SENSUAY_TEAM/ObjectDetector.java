@@ -21,35 +21,29 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
-
 public class ObjectDetector {
 
     private static final String TAG = "ObjectDetector";
-    private static final int INPUT_SIZE = 640; // ขนาดรูปภาพที่ป้อนเข้าโมเดล TFLite (เช่น 640x640)
-    private static final float CONFIDENCE_THRESHOLD = 0.5f; // ค่าความเชื่อมั่นขั้นต่ำ (0.0f - 1.0f)
-    private static final float IOU_THRESHOLD = 0.45f;   // ค่า IOU สำหรับ Non-Maximum Suppression (0.0f - 1.0f)
+    private static final int INPUT_SIZE = 640;
+    private static final float CONFIDENCE_THRESHOLD = 0.5f;
+    private static final float IOU_THRESHOLD = 0.45f;
 
-    // *** โครงสร้างเอาต์พุตของโมเดล: [Batch, จำนวนฟีเจอร์ต่อการคาดการณ์, จำนวนการคาดการณ์] ***
-    // Model output is [1, 15, 8400] <--- ยืนยันตามที่คุณแจ้ง
+    // Model output is [1, 15, 8400]
     private static final int OUTPUT_BATCH = 1;
-    private static final int OUTPUT_FEATURES_PER_PROPOSAL = 15;      // จำนวนฟีเจอร์ต่อหนึ่งการคาดการณ์ (x,y,w,h + 11 classes)
-    private static final int NUM_TOTAL_PROPOSALS = 8400; // จำนวนการคาดการณ์ทั้งหมด (กล่อง proposals)
+    private static final int OUTPUT_FEATURES_PER_PROPOSAL = 15;
+    private static final int NUM_TOTAL_PROPOSALS = 8400;
 
     private final Interpreter interpreter;
-    private final String[] LABELS; // เปลี่ยนเป็น final เพื่อให้กำหนดค่าใน constructor ได้
+    private final String[] LABELS;
 
     public ObjectDetector(Context context) {
         try {
-            // โหลดโมเดล TFLite จากไฟล์ assets
             MappedByteBuffer modelBuffer = FileUtil.loadMappedFile(context, "SensuayModelV3.tflite");
             Interpreter.Options interpretOptions = new Interpreter.Options();
-            interpretOptions.setNumThreads(2); // กำหนดจำนวนเธรดสำหรับ Interpreter
+            interpretOptions.setNumThreads(2);
             this.interpreter = new Interpreter(modelBuffer, interpretOptions);
             Log.i(TAG, "TFLite model loaded successfully: SensuayModelV3.tflite");
 
-            // โหลด LABELS จากไฟล์ predefined_classes.txt หรือกำหนดตรงนี้เลย
-            // ถ้า LABELS มีค่าคงที่อยู่แล้วตามโค้ดเดิม ไม่จำเป็นต้องโหลดจากไฟล์
             this.LABELS = new String[]{"coin",
                     "compass",
                     "coral",
@@ -71,17 +65,16 @@ public class ObjectDetector {
     }
 
     /**
-     * ประมวลผลรูปภาพ (Mat) ด้วยโมเดล Object Detector
+     * Processes an image (Mat) using the Object Detector model.
      *
-     * @param image รูปภาพต้นฉบับในรูปแบบ Mat (OpenCV)
-     * @return List ของ Map ที่แต่ละ Map เป็นการตรวจจับที่ผ่าน NMS แล้ว (มี confidence, classId, className)
+     * @param image The original image in Mat (OpenCV) format.
+     * @return A list of Maps, where each Map represents a detection after NMS (containing confidence, classId, className).
      */
     public List<Map<String, Object>> processImage(DataPaper image) {
         List<Map<String, Object>> finalDetections = new ArrayList<>();
         Log.i(TAG, "Starting image processing.");
         try {
             Mat img = image.getCaptureImage();
-            // แปลง Mat (OpenCV) เป็น Bitmap (Android)
             Bitmap bitmap = Bitmap.createBitmap(img.cols(), img.rows(), Bitmap.Config.ARGB_8888);
             Utils.matToBitmap(img, bitmap);
             Log.i(TAG, "Converted Mat to Bitmap. Size: " + bitmap.getWidth() + "x" + bitmap.getHeight());
@@ -95,28 +88,22 @@ public class ObjectDetector {
             int originalHeight = bitmap.getHeight();
             Log.i(TAG, "Original image dimensions: " + originalWidth + "x" + originalHeight);
 
-            // เตรียม TensorImage สำหรับป้อนเข้าโมเดล
             TensorImage tensorImage = new TensorImage();
-            tensorImage.load(bitmap); // โหลด Bitmap ต้นฉบับ (ImageProcessor จะจัดการปรับขนาดในภายหลัง)
+            tensorImage.load(bitmap);
             Log.i(TAG, "Bitmap loaded into TensorImage.");
 
-            // สร้าง ImageProcessor เพื่อประมวลผลรูปภาพก่อนเข้าโมเดล
             ImageProcessor imageProcessor = new ImageProcessor.Builder()
-                    .add(new NormalizeOp(0f, 255f)) // Normalize ค่าพิกเซลให้อยู่ในช่วง [0,1]
+                    .add(new NormalizeOp(0f, 255f))
                     .build();
             tensorImage = imageProcessor.process(tensorImage);
             Log.i(TAG, "Image pre-processed by ImageProcessor. TensorImage shape: " + tensorImage.getTensorBuffer().getShape()[0] + "x" + tensorImage.getTensorBuffer().getShape()[1]);
 
-
-            // เตรียม Output Array สำหรับรับผลลัพธ์จาก Interpreter
             float[][][] output = new float[OUTPUT_BATCH][OUTPUT_FEATURES_PER_PROPOSAL][NUM_TOTAL_PROPOSALS];
             Log.i(TAG, "Output array initialized with shape: [" + OUTPUT_BATCH + ", " + OUTPUT_FEATURES_PER_PROPOSAL + ", " + NUM_TOTAL_PROPOSALS + "]");
 
-            // รัน Interpreter เพื่ออนุมานผลลัพธ์
             interpreter.run(tensorImage.getBuffer(), output);
             Log.i(TAG, "Model inference completed successfully.");
 
-            // เรียกใช้ filterConfidenceThreshold เพื่อกรองและประมวลผลผลลัพธ์ดิบ
             finalDetections = filterConfidenceThreshold(output, originalWidth, originalHeight);
 
             if (finalDetections.size() == 0) {
@@ -130,9 +117,8 @@ public class ObjectDetector {
             throw new RuntimeException("Error processing image: " + e.getMessage(), e);
         }
         Log.i(TAG, "Finished image processing.");
-        return finalDetections; // คืนค่าผลลัพธ์การตรวจจับสุดท้าย
+        return finalDetections;
     }
-
 
     private List<Map<String, Object>> filterConfidenceThreshold(float[][][] output, int originalWidth, int originalHeight) {
         Log.i(TAG, "filterConfidenceThreshold method started for raw output processing.");
@@ -141,63 +127,48 @@ public class ObjectDetector {
         List<Float> allConfidences = new ArrayList<>();
         List<Integer> allClasses = new ArrayList<>();
 
-        // เข้าถึงข้อมูลการคาดการณ์จริง (output[0] คือ Batch แรกและ Batch เดียว)
-        // รูปร่างของ output[0] คือ [15][8400]
         float[][] rawPredictions = output[0];
         Log.i(TAG, "Raw predictions array shape: [" + rawPredictions.length + "][" + rawPredictions[0].length + "]");
 
-
-        // กำหนดดัชนีสำหรับพิกัด Bounding Box และ Class Probabilities
         final int X_CENTER_IDX = 0;
         final int Y_CENTER_IDX = 1;
         final int WIDTH_IDX = 2;
         final int HEIGHT_IDX = 3;
-        final int CLASS_PROBS_START_IDX = 4; // Class probabilities เริ่มต้นจากดัชนีที่ 4
+        final int CLASS_PROBS_START_IDX = 4;
 
-        // จำนวนคลาสคือ จำนวนฟีเจอร์ทั้งหมด (15) - พิกัด BBox (4)
         final int NUM_CLASSES = OUTPUT_FEATURES_PER_PROPOSAL - CLASS_PROBS_START_IDX;
 
         if (LABELS.length != NUM_CLASSES) {
             Log.e(TAG, "LABELS array size (" + LABELS.length + ") does not match calculated NUM_CLASSES (" + NUM_CLASSES + "). Check LABELS definition.");
-            // ควรจะมีการจัดการข้อผิดพลาดที่นี่ เช่น throw Exception
         }
         Log.i(TAG, "Calculated number of classes: " + NUM_CLASSES);
-        Log.i(TAG, "Processing " + NUM_TOTAL_PROPOSALS + " detection proposals (raw)."); // เปลี่ยนเป็น NUM_TOTAL_PROPOSALS
+        Log.i(TAG, "Processing " + NUM_TOTAL_PROPOSALS + " detection proposals (raw).");
 
-        // คำนวณ Scale และ Padding Offsets สำหรับการแปลงพิกัด
-        // (ส่วนนี้สำคัญมากในการแปลงพิกัดจาก Normalize ไปสู่พิกเซลจริงบนภาพต้นฉบับ)
         float scale = Math.min((float) INPUT_SIZE / originalWidth, (float) INPUT_SIZE / originalHeight);
         int scaledWidth = Math.round(originalWidth * scale);
         int scaledHeight = Math.round(originalHeight * scale);
-        int dx = (INPUT_SIZE - scaledWidth) / 2; // Offset แกน X (padding ซ้าย/ขวา)
-        int dy = (INPUT_SIZE - scaledHeight) / 2; // Offset แกน Y (padding บน/ล่าง)
+        int dx = (INPUT_SIZE - scaledWidth) / 2;
+        int dy = (INPUT_SIZE - scaledHeight) / 2;
         Log.i(TAG, "Scale: " + scale + ", dx (x-padding): " + dx + ", dy (y-padding): " + dy);
 
+        for (int i = 0; i < NUM_TOTAL_PROPOSALS; i++) {
+            float x_center_normalized = rawPredictions[X_CENTER_IDX][i];
+            float y_center_normalized = rawPredictions[Y_CENTER_IDX][i];
+            float width_normalized = rawPredictions[WIDTH_IDX][i];
+            float height_normalized = rawPredictions[HEIGHT_IDX][i];
 
-        // วนลูปผ่านการคาดการณ์ทั้งหมด 8400 กล่อง (NUM_TOTAL_PROPOSALS)
-        for (int i = 0; i < NUM_TOTAL_PROPOSALS; i++) { // i คือ proposal index
-            // Extract bbox coordinates (normalized from 0-1 based on INPUT_SIZE with padding)
-            float x_center_normalized = rawPredictions[X_CENTER_IDX][i]; // แถวฟีเจอร์ X, คอลัมน์ proposal i
-            float y_center_normalized = rawPredictions[Y_CENTER_IDX][i]; // แถวฟีเจอร์ Y, คอลัมน์ proposal i
-            float width_normalized = rawPredictions[WIDTH_IDX][i];       // แถวฟีเจอร์ Width, คอลัมน์ proposal i
-            float height_normalized = rawPredictions[HEIGHT_IDX][i];     // แถวฟีเจอร์ Height, คอลัมน์ proposal i
-
-            // ค้นหาคลาสที่มีความน่าจะเป็นสูงสุดและค่าความเชื่อมั่น
             float maxConfidence = -1.0f;
             int classId = -1;
 
-            // วนลูปผ่านค่าความน่าจะเป็นของคลาสสำหรับ proposal ปัจจุบัน
-            for (int j = 0; j < NUM_CLASSES; j++) { // j คือ class index
-                float classProb = rawPredictions[CLASS_PROBS_START_IDX + j][i]; // แถวฟีเจอร์ Class j, คอลัมน์ proposal i
+            for (int j = 0; j < NUM_CLASSES; j++) {
+                float classProb = rawPredictions[CLASS_PROBS_START_IDX + j][i];
                 if (classProb > maxConfidence) {
                     maxConfidence = classProb;
                     classId = j;
                 }
             }
 
-            // ใช้ Confidence Threshold ในการกรอง
             if (maxConfidence >= CONFIDENCE_THRESHOLD) {
-                // แปลงพิกัด BBox จาก Normalize (YOLO) ไปเป็นพิกเซลจริงบนรูปภาพต้นฉบับ
                 RectF bbox = calculateBoxCoordinates(
                         x_center_normalized, y_center_normalized,
                         width_normalized, height_normalized,
@@ -205,27 +176,21 @@ public class ObjectDetector {
                         originalWidth, originalHeight
                 );
 
-                // เพิ่มลงในลิสต์ทั้งหมดเฉพาะถ้า BBox ที่คำนวณได้ถูกต้อง
                 if (bbox != null) {
                     allBoxes.add(bbox);
                     allConfidences.add(maxConfidence);
                     allClasses.add(classId);
-                    // Log.d(TAG, String.format("Proposal %d accepted. Class: %s (ID: %d), Conf: %.2f, Box: [%.0f,%.0f,%.0f,%.0f]",
-                    //                          i, LABELS[classId], classId, maxConfidence, bbox.left, bbox.top, bbox.right, bbox.bottom));
                 }
             }
         }
 
         Log.i(TAG, "Total detections after confidence threshold: " + allBoxes.size());
 
-        // --- ใช้ Non-Maximum Suppression (NMS) ---
         int[] nmsResultIndices = nonMaxSuppression(allBoxes, allConfidences, IOU_THRESHOLD);
         Log.i(TAG, "Total detections after NMS: " + nmsResultIndices.length);
 
-        // สร้างลิสต์ผลลัพธ์สุดท้ายของการตรวจจับที่ผ่าน NMS แล้ว
         List<Map<String, Object>> finalDetections = new ArrayList<>();
         for (int idx : nmsResultIndices) {
-            // RectF bbox = allBoxes.get(idx); // ไม่จำเป็นต้องใช้ bbox ถ้าไม่แสดงผล หรือต้องการแค่ข้อมูลคลาส
             float confidence = allConfidences.get(idx);
             int classId = allClasses.get(idx);
             String className = (classId >= 0 && classId < LABELS.length) ? LABELS[classId] : "Unknown";
@@ -234,7 +199,6 @@ public class ObjectDetector {
             detectionMap.put("confidence", confidence);
             detectionMap.put("classId", classId);
             detectionMap.put("className", className);
-            // ไม่ได้ใส่ x1, y1, x2, y2 ลงใน map ถ้าไม่ต้องการ
 
             finalDetections.add(detectionMap);
             Log.d(TAG, String.format("Final Detection: Class: %s (ID: %d), Conf: %.2f",
@@ -247,21 +211,21 @@ public class ObjectDetector {
     }
 
     /**
-     * คำนวณพิกัด Bounding Box สุดท้ายในหน่วยพิกเซลของรูปภาพต้นฉบับ
-     * โดยแปลงจากพิกัด Normalize (center_x, center_y, width, height)
-     * และปรับแก้ตาม Scaling และ Padding
+     * Calculates the final Bounding Box coordinates in pixels relative to the original image.
+     * This converts from normalized coordinates (center_x, center_y, width, height)
+     * and adjusts for scaling and padding.
      *
-     * @param x_center_normalized พิกัด X กลางของกล่อง (0-1, Normalize)
-     * @param y_center_normalized พิกัด Y กลางของกล่อง (0-1, Normalize)
-     * @param width_normalized ความกว้างของกล่อง (0-1, Normalize)
-     * @param height_normalized ความสูงของกล่อง (0-1, Normalize)
-     * @param targetSize ขนาดเป้าหมายของรูปภาพที่ป้อนเข้าโมเดล (เช่น 640)
-     * @param dx ค่า Padding ทางแกน X
-     * @param dy ค่า Padding ทางแกน Y
-     * @param scale ค่า Scale ที่ใช้ปรับขนาดรูปภาพ
-     * @param originalWidth ความกว้างของรูปภาพต้นฉบับ
-     * @param originalHeight ความสูงของรูปภาพต้นฉบับ
-     * @return RectF ที่มีพิกัด (x1, y1, x2, y2) ของ Bounding Box ในหน่วยพิกเซลของรูปภาพต้นฉบับ, หรือ null ถ้ากล่องไม่ถูกต้อง
+     * @param x_center_normalized X-center coordinate of the box (0-1, normalized)
+     * @param y_center_normalized Y-center coordinate of the box (0-1, normalized)
+     * @param width_normalized Width of the box (0-1, normalized)
+     * @param height_normalized Height of the box (0-1, normalized)
+     * @param targetSize Target input size of the model (e.g., 640)
+     * @param dx X-axis padding value
+     * @param dy Y-axis padding value
+     * @param scale Scaling factor used for image resizing
+     * @param originalWidth Original image width
+     * @param originalHeight Original image height
+     * @return RectF with (x1, y1, x2, y2) coordinates of the Bounding Box in original image pixels, or null if the box is invalid.
      */
     private RectF calculateBoxCoordinates(
             float x_center_normalized, float y_center_normalized,
@@ -292,10 +256,10 @@ public class ObjectDetector {
     }
 
     /**
-     * คำนวณ Intersection over Union (IoU) ของ Bounding Boxes สองกล่อง
-     * @param box1 Bounding Box แรก (RectF)
-     * @param box2 Bounding Box ที่สอง (RectF)
-     * @return ค่า IoU
+     * Calculates the Intersection over Union (IoU) of two Bounding Boxes.
+     * @param box1 The first Bounding Box (RectF).
+     * @param box2 The second Bounding Box (RectF).
+     * @return The IoU value.
      */
     private float calculateIoU(RectF box1, RectF box2) {
         float intersectionX1 = Math.max(box1.left, box2.left);
@@ -320,11 +284,11 @@ public class ObjectDetector {
     }
 
     /**
-     * ใช้ Non-Maximum Suppression (NMS) เพื่อกรอง Bounding Boxes ที่ทับซ้อนกัน
-     * @param boxes List ของ Bounding Boxes (RectF)
-     * @param confidences List ของ Confidence Scores ที่สอดคล้องกัน
-     * @param iouThreshold ค่า IoU Threshold สำหรับการกำจัดกล่องที่ทับซ้อนกัน
-     * @return อาร์เรย์ของดัชนีของการตรวจจับที่จะเก็บไว้หลัง NMS
+     * Applies Non-Maximum Suppression (NMS) to filter overlapping Bounding Boxes.
+     * @param boxes List of Bounding Boxes (RectF).
+     * @param confidences List of corresponding Confidence Scores.
+     * @param iouThreshold IoU Threshold for suppressing overlapping boxes.
+     * @return An array of indices of the detections to keep after NMS.
      */
     private int[] nonMaxSuppression(List<RectF> boxes, final List<Float> confidences, float iouThreshold) {
         Log.i(TAG, "Starting NMS with " + boxes.size() + " boxes.");
@@ -338,42 +302,39 @@ public class ObjectDetector {
             indices.add(i);
         }
 
-        // เรียงลำดับดัชนีตาม Confidence Score จากมากไปน้อย
         Collections.sort(indices, new Comparator<Integer>() {
             @Override
             public int compare(Integer idx1, Integer idx2) {
-                return Float.compare(confidences.get(idx2), confidences.get(idx1)); // เรียงแบบ Descending Order (มากไปน้อย)
+                return Float.compare(confidences.get(idx2), confidences.get(idx1));
             }
         });
 
-        List<Integer> picked = new ArrayList<>(); // ดัชนีของกล่องที่ถูกเลือก (ที่ผ่าน NMS)
-        boolean[] suppressed = new boolean[confidences.size()]; // สถานะว่ากล่องถูกกำจัดไปแล้วหรือไม่
+        List<Integer> picked = new ArrayList<>();
+        boolean[] suppressed = new boolean[confidences.size()];
 
         for (int i = 0; i < indices.size(); i++) {
-            int currentIdx = indices.get(i); // ดึงดัชนีของกล่องที่มี Confidence สูงสุดที่ยังไม่ถูกกำจัด
+            int currentIdx = indices.get(i);
             if (suppressed[currentIdx]) {
-                continue; // ถ้ากล่องนี้ถูกกำจัดไปแล้ว ก็ข้ามไป
+                continue;
             }
-            picked.add(currentIdx); // เพิ่มกล่องนี้เข้าไปในลิสต์ที่เลือก
+            picked.add(currentIdx);
 
-            RectF currentBox = boxes.get(currentIdx); // Bounding Box ปัจจุบันที่ถูกเลือก
+            RectF currentBox = boxes.get(currentIdx);
 
-            // เปรียบเทียบกล่องปัจจุบันกับกล่องที่เหลือทั้งหมด
             for (int j = i + 1; j < indices.size(); j++) {
                 int nextIdx = indices.get(j);
                 if (suppressed[nextIdx]) {
-                    continue; // ถ้ากล่องถัดไปถูกกำจัดไปแล้ว ก็ข้ามไป
+                    continue;
                 }
 
-                RectF nextBox = boxes.get(nextIdx); // Bounding Box ถัดไป
-                float iou = calculateIoU(currentBox, nextBox); // คำนวณ IoU ระหว่างสองกล่อง
+                RectF nextBox = boxes.get(nextIdx);
+                float iou = calculateIoU(currentBox, nextBox);
 
                 if (iou > iouThreshold) {
-                    suppressed[nextIdx] = true; // ถ้า IoU สูงกว่า Threshold แสดงว่าทับซ้อนกันมาก ก็กำจัดกล่องที่สอง
+                    suppressed[nextIdx] = true;
                 }
             }
         }
-        // แปลง List ของดัชนีที่เลือกให้เป็น Array ของ int
         int[] result = new int[picked.size()];
         for (int i = 0; i < picked.size(); i++) {
             result[i] = picked.get(i);
@@ -383,11 +344,11 @@ public class ObjectDetector {
     }
 
     /**
-     * ฟังก์ชัน Clamp (ตัดขอบ) เพื่อจำกัดค่าให้อยู่ในช่วงที่กำหนด
-     * @param value ค่าที่ต้องการ Clamp
-     * @param min ค่าต่ำสุดที่อนุญาต
-     * @param max ค่าสูงสุดที่อนุญาต
-     * @return ค่าที่ถูก Clamp แล้ว
+     * Clamps a value within a specified range.
+     * @param value The value to clamp.
+     * @param min The minimum allowed value.
+     * @param max The maximum allowed value.
+     * @return The clamped value.
      */
     private float clamp(float value, float min, float max) {
         return Math.max(min, Math.min(max, value));
@@ -401,13 +362,12 @@ public class ObjectDetector {
 
         try {
             Mat img = image.getBackupImage();
-            // แปลง Mat (OpenCV) เป็น Bitmap (Android)
             Bitmap bitmap = Bitmap.createBitmap(img.cols(), img.rows(), Bitmap.Config.ARGB_8888);
             Utils.matToBitmap(img, bitmap);
             Log.i(TAG, "Converted Mat to Bitmap. Size: " + bitmap.getWidth() + "x" + bitmap.getHeight());
 
             if (bitmap == null) {
-                Log.e(TAG, "Bitmap conversion failed.");
+                Log.i(TAG, "Bitmap conversion failed.");
                 throw new RuntimeException("Failed to convert image to bitmap");
             }
 
@@ -415,35 +375,28 @@ public class ObjectDetector {
             int originalHeight = bitmap.getHeight();
             Log.i(TAG, "Original image dimensions: " + originalWidth + "x" + originalHeight);
 
-            // เตรียม TensorImage สำหรับป้อนเข้าโมเดล
             TensorImage tensorImage = new TensorImage();
-            tensorImage.load(bitmap); // โหลด Bitmap ต้นฉบับ (ImageProcessor จะจัดการปรับขนาดในภายหลัง)
+            tensorImage.load(bitmap);
             Log.i(TAG, "Bitmap loaded into TensorImage.");
 
-            // สร้าง ImageProcessor เพื่อประมวลผลรูปภาพก่อนเข้าโมเดล
             ImageProcessor imageProcessor = new ImageProcessor.Builder()
-                    .add(new NormalizeOp(0f, 255f)) // Normalize ค่าพิกเซลให้อยู่ในช่วง [0,1]
+                    .add(new NormalizeOp(0f, 255f))
                     .build();
             tensorImage = imageProcessor.process(tensorImage);
             Log.i(TAG, "Image pre-processed by ImageProcessor. TensorImage shape: " + tensorImage.getTensorBuffer().getShape()[0] + "x" + tensorImage.getTensorBuffer().getShape()[1]);
 
-
-            // เตรียม Output Array สำหรับรับผลลัพธ์จาก Interpreter
             float[][][] output = new float[OUTPUT_BATCH][OUTPUT_FEATURES_PER_PROPOSAL][NUM_TOTAL_PROPOSALS];
             Log.i(TAG, "Output array initialized with shape: [" + OUTPUT_BATCH + ", " + OUTPUT_FEATURES_PER_PROPOSAL + ", " + NUM_TOTAL_PROPOSALS + "]");
 
-            // รัน Interpreter เพื่ออนุมานผลลัพธ์
             interpreter.run(tensorImage.getBuffer(), output);
             Log.i(TAG, "Model inference completed successfully.");
 
             BackupfinalDetections = filterConfidenceThreshold(output, originalWidth, originalHeight);
 
         } catch (Exception e) {
-            Log.e(TAG, "Error processing " + ": " + e.getMessage(), e);
+            Log.i(TAG, "Error processing " + ": " + e.getMessage(), e);
         }
-
 
         return BackupfinalDetections;
     }
-
 }
