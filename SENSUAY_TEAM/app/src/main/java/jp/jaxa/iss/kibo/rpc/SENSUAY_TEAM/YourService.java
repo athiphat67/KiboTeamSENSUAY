@@ -652,7 +652,7 @@ public class YourService extends KiboRpcService {
             case 4:
                 double[] tvec4 = {tvec[2],-1 * tvec[0], tvec[1]};
                 Point moveReportPoint4 =targetPositions.get(MissionTarget.PLAN2_CAP_A4);
-                Point translationPoint4 = new Point(10.58, moveReportPoint4.getY() + tvec4[1], moveReportPoint4.getZ() +tvec4[2]);
+                Point translationPoint4 = new Point(10.58, moveReportPoint4.getY() + tvec4[1], moveReportPoint4.getZ() + (tvec4[2] * 0.8));
                 reportPosition = moveToArea(translationPoint4, targetOrientations.get(MissionTarget.PLAN2_CAP_A4));
                 break;
         }
