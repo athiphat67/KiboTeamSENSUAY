@@ -12,6 +12,9 @@ import org.opencv.core.Mat;
 import java.util.Arrays;
 import java.util.List;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * A data class to hold all relevant information from a single paper capture event.
  * This includes the processed image, success status, and pose data (rvec, tvec).
@@ -34,7 +37,8 @@ public class DataPaper {
     private List<Mat> keepcorners;
 
     // --- Constructors & Other Methods... ---
-    public DataPaper(Mat captureImage, Mat backupImage, boolean isSuccess, int paperNumber, int arucoId, double[] rvec, double[] tvec, List<Mat> keepcorners ,Kinematics pos, Quaternion qnow) {
+
+    public DataPaper(Mat captureImage, Mat backupImage, boolean isSuccess, int paperNumber, int arucoId, double[] rvec, double[] tvec, List<Mat> keepcorners, Kinematics pos, Quaternion qnow) {
 
         this.captureImage = captureImage;
         this.backupImage = backupImage;
@@ -59,7 +63,7 @@ public class DataPaper {
         } else {
             this.tvec = new double[]{0, 0, 0};
         }
-        //this.pointPaper = calculateWorldPoint();
+        this.pointPaper = FindPointPaper();
         logDataToLogcat("ShowDataPaper");
     }
 
@@ -181,116 +185,69 @@ public class DataPaper {
         return "DataPaper{...}";
     }
 
-    // แนะนำให้ประกาศ TAG ไว้ที่ด้านบนของคลาสเพื่อความเป็นระเบียบ
-    private static final String TAG = "WorldPointCalcs";
+    public void logDataToLogcat(String tag) {
+        // พิมพ์ Header เพื่อให้แยกแยะข้อมูลได้ง่ายใน Logcat
+        Log.i(tag, "========== DataPaper Log ==========");
 
-    private Point calculateWorldPoint() throws IllegalArgumentException {
+        // ข้อมูลสถานะและความสำเร็จ
+        Log.i(tag, "isSuccess: " + isSuccess);
+        Log.i(tag, "statusMessage: '" + statusMessage + "'");
 
-        // 1. ดึงข้อมูลอินพุต
-        Quaternion cameraQuaternion = this.getQuaternionNow();
-        double qx = cameraQuaternion.getX();
-        double qy = cameraQuaternion.getY();
-        double qz = cameraQuaternion.getZ();
-        double qw = cameraQuaternion.getW();
-        Log.i(TAG, "Input Quaternion (x,y,z,w): [" + qx + ", " + qy + ", " + qz + ", " + qw + "]");
+        // ข้อมูลเกี่ยวกับเป้าหมาย
+        Log.i(tag, "paperNumber: " + paperNumber);
+        Log.i(tag, "arucoId: " + arucoId);
+        Log.i(tag, "targetItem: '" + targetItem + "'");
 
-        Point cameraPosition = this.posNow.getPosition();
-        double Px = cameraPosition.getX();
-        double Py = cameraPosition.getY();
-        double Pz = cameraPosition.getZ();
-        Log.i(TAG, "Input Camera Position (X,Y,Z): [" + Px + ", " + Py + ", " + Pz + "]");
+        // ข้อมูล Pose และตำแหน่ง
+        Log.i(tag, "rvec: " + Arrays.toString(rvec));
+        Log.i(tag, "tvec: " + Arrays.toString(tvec));
+        Log.i(tag, "pointPaper: " + (pointPaper != null ? pointPaper.toString() : "null"));
 
-        double tvec0 = tvec[0] / 10.0 ;
-        double tvec1 = tvec[1] / 10.0 ;
-        double tvec2 = tvec[2] / 10.0 ;
-        Log.i(TAG, "Input TVec (from camera): [" + tvec0 + ", " + tvec1 + ", " + tvec2 + "]");
+        // ข้อมูลตำแหน่งของหุ่นยนต์
+        Log.i(tag, "posNow: " + (posNow != null ? posNow.toString() : "null"));
+        Log.i(tag, "quaternionNow: " + (quaternionNow != null ? quaternionNow.toString() : "null"));
 
-        Mat rotationVector = new Mat(3, 1, CvType.CV_64F);
+        // ข้อมูลสรุปของรูปภาพ
+        String captureInfo = (captureImage != null) ? "Mat[width=" + captureImage.width() + ", height=" + captureImage.height() + "]" : "null";
+        Log.i(tag, "captureImage: " + captureInfo);
 
-        // จัดการกรณีพิเศษที่ w มีค่าเกือบเป็น 1 (ไม่มีการหมุน) เพื่อหลีกเลี่ยงการหารด้วยศูนย์
-        if (qw * qw < 1.0 - 1e-8) {
-            double angle = 2 * Math.acos(qw);
-            double scale = Math.sqrt(1 - qw * qw);
+        String cornersInfo = (keepcorners != null) ? "List<Mat>[size=" + keepcorners.size() + "]" : "null";
+        Log.i(tag, "keepcorners: " + cornersInfo);
 
-            rotationVector.put(0, 0, angle * qx / scale);
-            rotationVector.put(1, 0, angle * qy / scale);
-            rotationVector.put(2, 0, angle * qz / scale);
+        // พิมพ์ Footer
+        Log.i(tag, "===================================");
+    }
+
+    private Point FindPointPaper() {
+
+        double NewX;
+        double NewY;
+        double NewZ;
+
+        if ( paperNumber == 1) {
+
+            double[] NewTvec = {tvec[0], tvec[2], tvec[1]};
+            NewX = posNow.getPosition().getX() + NewTvec[0];
+            NewY = -10.58;
+            NewZ = posNow.getPosition().getZ() + NewTvec[2];
+
+        } else if ( paperNumber == 2 || paperNumber == 3){
+
+            double[] NewTvec = {tvec[1], tvec[0], tvec[2]};
+            NewX = posNow.getPosition().getX() + NewTvec[0];
+            NewY = posNow.getPosition().getY() + NewTvec[1];
+            NewZ = 3.76203;
+
         } else {
-            // Identity quaternion, no rotation. Rotation vector is (0,0,0)
-            rotationVector.put(0, 0, new double[]{0, 0, 0});
-        }
-        Log.i(TAG, "Intermediate Rotation Vector: " + rotationVector.dump());
 
-
-        // ใช้ Rodrigues เพื่อแปลง Rotation Vector เป็น Rotation Matrix
-        Mat rotationMatrix = new Mat(3, 3, CvType.CV_64F);
-        Calib3d.Rodrigues(rotationVector, rotationMatrix);
-
-        double r11 = rotationMatrix.get(0, 0)[0];
-        double r12 = rotationMatrix.get(0, 1)[0];
-        double r13 = rotationMatrix.get(0, 2)[0];
-
-        double r21 = rotationMatrix.get(1, 0)[0];
-        double r22 = rotationMatrix.get(1, 1)[0];
-        double r23 = rotationMatrix.get(1, 2)[0];
-
-        double r31 = rotationMatrix.get(2, 0)[0];
-        double r32 = rotationMatrix.get(2, 1)[0];
-        double r33 = rotationMatrix.get(2, 2)[0];
-
-        // 3. คำนวณพิกัดของ Marker ใน World Frame
-        double worldX = r11 * tvec0 + r12 * tvec1 + r13 * tvec2 + Px;
-        double worldY = r21 * tvec0 + r22 * tvec1 + r23 * tvec2 + Py;
-        double worldZ = r31 * tvec0 + r32 * tvec1 + r33 * tvec2 + Pz;
-        Log.i(TAG, "==> Calculated World Point (X,Y,Z): [" + worldX + ", " + worldY + ", " + worldZ + "]");
-
-        if (paperNumber == 1 ) {
-
-            worldZ -= 0.15 ;
-
-        } else if (paperNumber == 2) {
-
-            worldX -= 0.15;
-            worldY -= 0.25;
-
-        } else if (paperNumber == 3) {
-
-            worldX -= 0.15;
-
-        } else if (paperNumber == 4) {
-
-            worldZ += 0.15;
+            double[] NewTvec = {tvec[2], -1 * tvec[0], tvec[1]};
+            NewX = 9.886984;
+            NewY = posNow.getPosition().getY() + NewTvec[1];
+            NewZ = posNow.getPosition().getZ() + NewTvec[2];
 
         }
 
-
-        // 4. ตรวจสอบว่าพิกัดอยู่ในช่วงของ KIZ 1 หรือไม่
-        final double KIZ1_X_MIN = 10.3;
-        final double KIZ1_X_MAX = 11.55;
-        final double KIZ1_Y_MIN = -10.2;
-        final double KIZ1_Y_MAX = -6.0;
-        final double KIZ1_Z_MIN = 4.32;
-        final double KIZ1_Z_MAX = 5.57;
-
-        if (worldX < KIZ1_X_MIN || worldX > KIZ1_X_MAX ||
-                worldY < KIZ1_Y_MIN || worldY > KIZ1_Y_MAX ||
-                worldZ < KIZ1_Z_MIN || worldZ > KIZ1_Z_MAX) {
-
-            // สร้างข้อความสำหรับ Log และ Exception
-            String errorMessage = "Calculated point [" + worldX + ", " + worldY + ", " + worldZ + "] is outside the KIZ 1 zone.";
-
-            // Log เป็น Error เพื่อให้เห็นใน Logcat เป็นสีแดง
-            Log.e(TAG, "ExceptionKIZ: " + errorMessage);
-
-            // โยน Exception พร้อมข้อความ
-            throw new IllegalArgumentException(errorMessage);
-        }
-
-        // 5. สร้างและส่งคืนผลลัพธ์
-        Log.d(TAG, "Point is within KIZ 1 bounds. Returning result.");
-        Point pointResult = new Point(worldX, worldY, worldZ); // สมมติว่า Point มี constructor แบบนี้
-
-        return pointResult;
+        return new Point(NewX, NewY, NewZ);
     }
 
     public void logDataToLogcat(String tag) {
@@ -325,7 +282,6 @@ public class DataPaper {
         // พิมพ์ Footer
         Log.i(tag, "===================================");
     }
-
 
 
 }

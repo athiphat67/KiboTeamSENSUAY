@@ -63,7 +63,7 @@ public class YourService extends KiboRpcService {
     // position คือ point ที่เดินทางไป
     // orientation คือ มุมหรือการหมุนของ astrobee (ให้ astrobee หมุนกล้องไปด้านที่ถูก)
     // api.moveTo เป็น api ของ kibo (printRobotPosition คืออะไรไม่รู้)
-    public boolean moveToArea(Point position, Quaternion orientation) throws IOException{
+    public boolean moveToArea(Point position, Quaternion orientation) throws IOException {
         Result moveResult = api.moveTo(position, orientation, false);
         int loopCount = 0;
         while (!moveResult.hasSucceeded() && loopCount < 3) {
@@ -106,19 +106,17 @@ public class YourService extends KiboRpcService {
 
         // Add จุดใหม่ไปที่ enum ของชื่อจุดที่สร้างไว้
         // Position (x,y,x)
-        targetPositions.put(MissionTarget.PLAN2_CAP_A1, new Point(11.15,-9.5,4.9645));
-        targetPositions.put(MissionTarget.PLAN2_CAP_A23, new Point(11.15,-8.45, 4.9645));
+        targetPositions.put(MissionTarget.PLAN2_CAP_A1, new Point(11.15, -9.5, 4.9645));
+        targetPositions.put(MissionTarget.PLAN2_CAP_A23, new Point(11.15, -8.45, 4.9645));
         targetPositions.put(MissionTarget.PLAN2_CAP_A4, new Point(11.143, -6.8525, 4.9645));
         targetPositions.put(MissionTarget.PLAN2_ASTRO_POS, new Point(11.143, -6.8525, 4.9645));
 
         // Add องศารอบแกนหมุนไปที่ชื่อจุด
         // Quaternion (pitch,roll,yaw)
-        targetOrientations.put(MissionTarget.PLAN2_CAP_A1, eulerToQuaternion(-10, 0,-80));
+        targetOrientations.put(MissionTarget.PLAN2_CAP_A1, eulerToQuaternion(-15, 0,-80));
         targetOrientations.put(MissionTarget.PLAN2_CAP_A23, eulerToQuaternion(90,0,0));
         targetOrientations.put(MissionTarget.PLAN2_CAP_A4, eulerToQuaternion(-5,0,180));
         targetOrientations.put(MissionTarget.PLAN2_ASTRO_POS, eulerToQuaternion(0,0,90));
-
-
 
         // move astrobee ไปที่จุดบน oasis 2 พร้อมหมุน astrobee แล้วถ่ายภาพ
         try {
@@ -127,8 +125,10 @@ public class YourService extends KiboRpcService {
             DataPaper result1 = CapturePaper(1, targetOrientations.get(MissionTarget.PLAN2_CAP_A1));
 
             Mat imgResult = result1.getCaptureImage();
-            api.saveMatImage(imgResult, "imgArea_"+ 1 +".png");
+            api.saveMatImage(imgResult, "imgArea_" + 1 + ".png");
             ListDataPaper.add(result1);
+
+            SystemClock.sleep(2000);
 
             ObjectDetector detector = new ObjectDetector(this);
             resultList.add(detector.processImage(result1));
@@ -150,13 +150,13 @@ public class YourService extends KiboRpcService {
             DataPaper result2 = CapturePaper(2, targetOrientations.get(MissionTarget.PLAN2_CAP_A23));
             ListDataPaper.add(result2);
             Mat imgResult2 = result2.getCaptureImage();
-            api.saveMatImage(imgResult2, "imgArea_"+ 2 +".png");
+            api.saveMatImage(imgResult2, "imgArea_" + 2 + ".png");
             resultList.add(detector.processImage(result2));
 
             DataPaper result3 = CapturePaper(3, targetOrientations.get(MissionTarget.PLAN2_CAP_A23));
             ListDataPaper.add(result3);
             Mat imgResult3 = result3.getCaptureImage();
-            api.saveMatImage(imgResult3, "imgArea_"+ 3 +".png");
+            api.saveMatImage(imgResult3, "imgArea_" + 3 + ".png");
             resultList.add(detector.processImage(result3));
 
         } catch (IOException e) {
@@ -176,7 +176,7 @@ public class YourService extends KiboRpcService {
             DataPaper result4 = CapturePaper(4, targetOrientations.get(MissionTarget.PLAN2_CAP_A4));
             ListDataPaper.add(result4);
             Mat imgResult4 = result4.getCaptureImage();
-            api.saveMatImage(imgResult4, "imgArea_"+ 4 +".png");
+            api.saveMatImage(imgResult4, "imgArea_" + 4 + ".png");
             resultList.add(detector.processImage(result4));
 
         } catch (IOException e) {
@@ -196,7 +196,7 @@ public class YourService extends KiboRpcService {
             DataPaper result5 = CapturePaper(5, targetOrientations.get(MissionTarget.PLAN2_ASTRO_POS));
             ListDataPaper.add(result5);
             Mat imgResult5 = result5.getCaptureImage();
-            api.saveMatImage(imgResult5, "imgArea_"+ 5 +".png");
+            api.saveMatImage(imgResult5, "imgArea_" + 5 + ".png");
 
             ObjectDetector detector = new ObjectDetector(this);
             resultList.add(detector.processImage(result5));
@@ -211,8 +211,8 @@ public class YourService extends KiboRpcService {
         for (DataPaper obj : ListDataPaper) {
             double[] rvec = obj.getRvec();
             double[] tvec = obj.getTvec();
-            Log.i("Rvec" , "rvec"+ i + " : " + rvec[0] + " , " + rvec[1] + " , " + rvec[2]);
-            Log.i("Tvec" , "tvec"+ i + " : " + tvec[0] + " , " + tvec[1] + " , " + tvec[2]);
+            Log.i("Rvec", "rvec" + i + " : " + rvec[0] + " , " + rvec[1] + " , " + rvec[2]);
+            Log.i("Tvec", "tvec" + i + " : " + tvec[0] + " , " + tvec[1] + " , " + tvec[2]);
             i++;
         }
 
@@ -276,21 +276,21 @@ public class YourService extends KiboRpcService {
 
         if (Inputpaper == 2) {
 
-            Mat leftImg = blackOutHalfImage(imgUndistort, 2);
+            Mat leftImg = blackOutHalfImage(Cam, 2);
             Aruco.detectMarkers(leftImg, Dict, keepcorners, keepids);
             Aruco.estimatePoseSingleMarkers(keepcorners, ARUCO_LEN, cameraMatrix, dstMatrix, keeprvecs, keeptvecs);
 
         } else if (Inputpaper == 3) {
 
-            Mat rightImg = blackOutHalfImage(imgUndistort, 3);
+            Mat rightImg = blackOutHalfImage(Cam, 3);
             Aruco.detectMarkers(rightImg, Dict, keepcorners, keepids);
             Aruco.estimatePoseSingleMarkers(keepcorners, ARUCO_LEN, cameraMatrix, dstMatrix, keeprvecs, keeptvecs);
 
         } else {
-            Aruco.detectMarkers(imgUndistort, Dict, keepcorners, keepids);
+            Aruco.detectMarkers(Cam, Dict, keepcorners, keepids);
             Aruco.estimatePoseSingleMarkers(keepcorners, ARUCO_LEN, cameraMatrix, dstMatrix, keeprvecs, keeptvecs);
 
-            api.saveMatImage(Cam, "imgUndistort_" + Inputpaper + ".png");
+            api.saveMatImage(Cam, "imgNormal_" + Inputpaper + ".png");
 
         }
 
@@ -428,7 +428,6 @@ public class YourService extends KiboRpcService {
             // ตรวจสอบให้แน่ใจว่า cropWidth และ cropHeight เป็นคู่
             cropWidth = (cropWidth % 2 == 0) ? cropWidth : cropWidth + 1;
             cropHeight = (cropHeight % 2 == 0) ? cropHeight : cropHeight + 1;
-
 
             // คำนวณตำแหน่งเริ่มต้นของการ Crop
             int x = (int) (current_aruco_center_x - cropWidth / 2);
@@ -654,6 +653,7 @@ public class YourService extends KiboRpcService {
                 Point moveReportPoint4 =targetPositions.get(MissionTarget.PLAN2_CAP_A4);
                 Point translationPoint4 = new Point(10.58, moveReportPoint4.getY() + tvec4[1], moveReportPoint4.getZ() + (tvec4[2] * 0.8));
                 reportPosition = moveToArea(translationPoint4, targetOrientations.get(MissionTarget.PLAN2_CAP_A4));
+
                 break;
         }
 
@@ -712,7 +712,7 @@ public class YourService extends KiboRpcService {
                     Log.i("DetectionResults",
                             String.format("    ไอเท็ม: %s, จำนวน: %d", itemName, itemNum));
 
-                    api.setAreaInfo(imageIndex + 1 , itemName, itemNum);
+                    api.setAreaInfo(imageIndex + 1, itemName, itemNum);
                 }
             }
         }
@@ -725,14 +725,18 @@ public class YourService extends KiboRpcService {
 
         for (Map<String, Object> items : list) {
             String className = (String) items.get("className");
-            if (className.equalsIgnoreCase("crystal")) { strTargetItem = "crystal";}
-            else if (className.equalsIgnoreCase("emerald")) { strTargetItem = "emerald";}
-            else if (className.equalsIgnoreCase("diamond")) { strTargetItem = "diamond";}
+            if (className.equalsIgnoreCase("crystal")) {
+                strTargetItem = "crystal";
+            } else if (className.equalsIgnoreCase("emerald")) {
+                strTargetItem = "emerald";
+            } else if (className.equalsIgnoreCase("diamond")) {
+                strTargetItem = "diamond";
+            }
         }
 
         int numpaper = 0;
 
-        for (int i = 0 ; i < ListDataPaper.size() - 1 ; i++) {
+        for (int i = 0; i < ListDataPaper.size() - 1; i++) {
             String check = ListDataPaper.get(i).getTargetItem();
             if (check.equalsIgnoreCase(strTargetItem)) {
                 numpaper = ListDataPaper.get(i).getPaperNumber();
