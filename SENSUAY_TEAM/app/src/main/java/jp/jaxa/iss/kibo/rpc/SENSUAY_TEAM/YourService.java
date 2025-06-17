@@ -646,7 +646,7 @@ public class YourService extends KiboRpcService {
                 break;
 
             case 4:
-
+            
                 double z4 = dataPaper.getPointPaper().getZ();
                 double y4 = dataPaper.getPointPaper().getY();
 
