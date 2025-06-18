@@ -28,12 +28,17 @@ Third part is machine learning model creation. In this part we do datasets prepa
 we train our model to be able to detect items correctly(we use yolov8n). 
 the last part is reporting route planning. this part we search for method that will make reportation correct according to the rules.
 
-### First part:
+### First part: Path Navigation
+- Developed using **Android Studio** for building and testing the navigation logic.
+- Two navigation strategies were considered:
+  1. Maximize the number of Oasis Zone passes.
+  2. Minimize travel time.
+- After simulation tests, the fastest path yielded the highest score, so it was selected for the final submission.
 
 ### Second part: Image Processing
 
-### Third part: 
-phase of our machine learning project involved data annotation and dataset creation. I utilized LabelImg, a graphical image annotation tool, to meticulously label 2500 individual images. This process was crucial for "telling" the machine learning model exactly what each item of interest was within the images,              enabling it to learn and identify these objects accurately during training. These 2500 annotated images form the core of our training dataset.
+### Third part: Machine Learning Object Detection Pipeline
+phase of our machine learning project involved data annotation and dataset creation. We utilized LabelImg, a graphical image annotation tool, to meticulously label 2500 individual images. This process was crucial for "telling" the machine learning model exactly what each item of interest was within the images,              enabling it to learn and identify these objects accurately during training. These 2500 annotated images form the core of our training dataset.
 
 ### Fourth part:
     
