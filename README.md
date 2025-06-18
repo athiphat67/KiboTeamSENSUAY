@@ -4,6 +4,6 @@
 ## We are SENSUAY! this name stand  from "Theepop Noodle Shop"
 ## 👥 Team Members
 
--   **Athiphat Soonsit** - Team leader, operation planing, image processing, 
--   **Purich Ampawa** - Robotics Engineer, Path Planning & Navigation
--   **Theepop Rattanasubsiri** - Vision Systems Specialist, System Integration
+-   **Athiphat Soonsit** - Team leader (Operation planing, Image processing, AI Machine Learning)
+-   **Purich Ampawa** - AI Machine Learning Model, Path Planning & Navigation
+-   **Theepop Rattanasubsiri** - Dataset Preparer for AI Machine Learning, Path Planning & Navigation
