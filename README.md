@@ -21,11 +21,17 @@ For Kibo-RPC #6, competitors will be given an exciting simulated mission: "Space
 
 
 Project overview:
-    we split the whole project into 3 parts. 
+    we split the whole project into 4 parts. 
     First part is Path planning. In this part we search for the best route for saving time.
-    Second part is machine learning model creation. In this part we do datasets preparing and machine learning model training. 
+    Secomd is image processing. In this part we use Opencv libraries for image processing.
+    Third part is machine learning model creation. In this part we do datasets preparing and machine learning model training. 
     we train our model to be able to detect items correctly(we use yolov8n). 
     the last part is reporting route planning. this part we search for method that will make reportation correct according to the rules.
+First part:
 
 Second part:
-     phase of our machine learning project involved data annotation and dataset creation. I utilized LabelImg, a graphical image annotation tool, to meticulously           label 2500 individual images. This process was crucial for "telling" the machine learning model exactly what each item of interest was within the images,              enabling it to learn and identify these objects accurately during training. These 2500 annotated images form the core of our training dataset.
+
+Third part: phase of our machine learning project involved data annotation and dataset creation. I utilized LabelImg, a graphical image annotation tool, to meticulously label 2500 individual images. This process was crucial for "telling" the machine learning model exactly what each item of interest was within the images,              enabling it to learn and identify these objects accurately during training. These 2500 annotated images form the core of our training dataset.
+
+Fourth part:
+    
