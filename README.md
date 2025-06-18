@@ -46,6 +46,8 @@ As a solution, we switched to using **YOLOv8n**, a lightweight and efficient mod
 ### Fourth part:
 In this pahse we adapt tvec values which we get from Opencv to be correspond with axis in the simulation. After the tvec is correspond with simulation's axis, we use vector translation to get the reporting point in 3d space then move astrobee to be within that point. Eventually the part of reporting is finishes
 
-### Built With
+### 💻 Built With
 
-    
+- ![Java](https://img.shields.io/badge/Java-red?style=for-the-badge&logo=java&logoColor=white)
+- ![Python](https://img.shields.io/badge/Python-blue?style=for-the-badge&logo=python&logoColor=white)
+- ![Android Studio](https://img.shields.io/badge/Android_Studio-green?style=for-the-badge&logo=android&logoColor=white)
