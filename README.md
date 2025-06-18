@@ -9,5 +9,8 @@
 -   **Theepop Rattanasubsiri** - Dataset Preparer for AI Machine Learning, Path Planning & Navigation
 
 Project overview:
-  we split the whole project into 3 parts. 
-  First part is Path planning. In this part we are researchin
+    we split the whole project into 3 parts. 
+    First part is Path planning. In this part we search for the best route for saving time.
+    Second part is machine learning model creation. In this part we do datasets preparing and machine learning model training. 
+    we train our model to be able to detect items correctly(we use yolov8n). 
+    the last part is reporting route planning. this part we search for method that will make reportation correct according to the rules.
