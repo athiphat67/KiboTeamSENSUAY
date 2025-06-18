@@ -222,14 +222,13 @@ public class YourService extends KiboRpcService {
 
     private DataPaper CapturePaper(int paper, Quaternion quaternionNow) {
 
-        
         int Inputpaper = paper;
         Mat warpedFlipped;
         int arucoid;
         double[] rvec_array = new double[3];
         double[] tvec_array = new double[3];
         Mat imgRotation; // Declare outside loop to retain value
-        Mat imgBackup = new Mat(); // Declare imgBackup here as well
+        Mat imgBackup; // Declare imgBackup here as well
         float ARUCO_LEN = 0.05f;
 
         // rvec tvec
@@ -249,6 +248,7 @@ public class YourService extends KiboRpcService {
         dstMatrix.put(0, 0, cameraParam[1]);
 
         Mat Cam = api.getMatNavCam();
+        imgBackup = Cam;
         Dictionary Dict = Aruco.getPredefinedDictionary(Aruco.DICT_5X5_250);
 
         // ------------------------- Img Undistort --------------------------------------------- //
