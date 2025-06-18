@@ -22,7 +22,7 @@ For Kibo-RPC #6, competitors will be given an exciting simulated mission: "Space
 ## 🚀 Project overview
 we split the whole project into 4 parts. 
 First part is Path planning. In this part we search for the best route for saving time.
-Secomd is image processing. In this part we use Opencv libraries for image processing.
+Second is image processing. In this part we use Opencv libraries for image processing.
 Third part is machine learning model creation. In this part we do datasets preparing and machine learning model training. 
 we train our model to be able to detect items correctly(we use yolov8n). 
 the last part is reporting route planning. this part we search for method that will make reportation correct according to the rules.
