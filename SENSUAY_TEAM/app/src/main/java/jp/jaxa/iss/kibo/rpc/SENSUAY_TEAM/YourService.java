@@ -228,7 +228,7 @@ public class YourService extends KiboRpcService {
         double[] rvec_array = new double[3];
         double[] tvec_array = new double[3];
         Mat imgRotation; // Declare outside loop to retain value
-        Mat imgBackup = api.getMatNavCam(); // Declare imgBackup here as well
+        Mat imgBackup = new Mat(); // Declare imgBackup here as well
         float ARUCO_LEN = 0.05f;
 
         // rvec tvec
