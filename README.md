@@ -19,7 +19,6 @@ For Kibo-RPC #6, competitors will be given an exciting simulated mission: "Space
 - **Search and Photograph:** Travel to the true treasure's location and take a confirmation photo.
 - **Activate Signal**: Activate a light signal to inform the astronauts of the treasure's location, completing the mission.
 
-
 ## 🚀 Project overview
 we split the whole project into 4 parts. 
 First part is Path planning. In this part we search for the best route for saving time.
@@ -27,6 +26,7 @@ Secomd is image processing. In this part we use Opencv libraries for image proce
 Third part is machine learning model creation. In this part we do datasets preparing and machine learning model training. 
 we train our model to be able to detect items correctly(we use yolov8n). 
 the last part is reporting route planning. this part we search for method that will make reportation correct according to the rules.
+
 
 ### First part: Path Navigation
 - Developed using **Android Studio** for building and testing the navigation logic.
@@ -41,4 +41,6 @@ the last part is reporting route planning. this part we search for method that w
 phase of our machine learning project involved data annotation and dataset creation. We utilized LabelImg, a graphical image annotation tool, to meticulously label 2500 individual images. This process was crucial for "telling" the machine learning model exactly what each item of interest was within the images,              enabling it to learn and identify these objects accurately during training. These 2500 annotated images form the core of our training dataset.
 
 ### Fourth part:
+In this pahse we adapt tvec values which we get from Opencv to be correspond with axis in the simulation. After the tvec is correspond with simulation's axis, we use vector translation to get the reporting point in 3d space then move astrobee to be within that point. Eventually the part of reporting is finishes
+
     
