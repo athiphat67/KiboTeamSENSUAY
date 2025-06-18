@@ -48,8 +48,4 @@ In this pahse we adapt tvec values which we get from Opencv to be correspond wit
 
 ### Built With
 
-* [![Java][Java.com]][Java-url]
-
-&lt;p align="right">(&lt;a href="#readme-top">back to top&lt;/a>)&lt;/p>
-
     
