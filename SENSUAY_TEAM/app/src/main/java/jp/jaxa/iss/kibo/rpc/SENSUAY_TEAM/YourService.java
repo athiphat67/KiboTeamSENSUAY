@@ -188,7 +188,7 @@ public class YourService extends KiboRpcService {
             ReportAllArea(resultList);
             api.reportRoundingCompletion();
 
-            SystemClock.sleep(2000);
+            SystemClock.sleep(3500);
 
             DataPaper result5 = CapturePaper(5, targetOrientations.get(MissionTarget.PLAN2_ASTRO_POS));
             ListDataPaper.add(result5);
@@ -203,15 +203,6 @@ public class YourService extends KiboRpcService {
         }
 
         api.notifyRecognitionItem();
-
-        int i = 1;
-        for (DataPaper obj : ListDataPaper) {
-            double[] rvec = obj.getRvec();
-            double[] tvec = obj.getTvec();
-            Log.i("Rvec", "rvec" + i + " : " + rvec[0] + " , " + rvec[1] + " , " + rvec[2]);
-            Log.i("Tvec", "tvec" + i + " : " + tvec[0] + " , " + tvec[1] + " , " + tvec[2]);
-            i++;
-        }
 
         //move to targetArea
         int NumberResultPaper = FindPaperOfTargetItems();
@@ -237,7 +228,7 @@ public class YourService extends KiboRpcService {
         double[] rvec_array = new double[3];
         double[] tvec_array = new double[3];
         Mat imgRotation; // Declare outside loop to retain value
-        Mat imgBackup = new Mat(); // Declare imgBackup here as well
+        Mat imgBackup = api.getMatNavCam(); // Declare imgBackup here as well
         float ARUCO_LEN = 0.05f;
 
         // rvec tvec
