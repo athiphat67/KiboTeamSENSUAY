@@ -8,6 +8,18 @@
 -   **Purich Ampawa** - AI Machine Learning Model, Path Planning & Navigation
 -   **Theepop Rattanasubsiri** - Dataset Preparer for AI Machine Learning, Path Planning & Navigation
 
+## 🚀 Kibo-RPC 6th Mission Overview
+**Mission Brief: The Space Treasure Hunt**
+
+For Kibo-RPC #6, competitors will be given an exciting simulated mission: "Space pirates have hidden treasure in the Kibo module, and the astronauts have clues but don't know the exact location." Participating teams will need to write programs to control the Astrobee free-flying robot, a robot actually used on the ISS, to complete the following tasks:
+
+- **Explore the Area:** Astrobee must move to designated observation points throughout the Kibo module, where fake treasures may be scattered.
+- **Collect Data and Report:** Record data and report findings at each explored point.
+- **Analyze Clues:** Use clues provided by astronauts during the competition to identify the true treasure's location.
+- **Search and Photograph:** Travel to the true treasure's location and take a confirmation photo.
+- **Activate Signal**: Activate a light signal to inform the astronauts of the treasure's location, completing the mission.
+
+
 Project overview:
     we split the whole project into 3 parts. 
     First part is Path planning. In this part we search for the best route for saving time.
