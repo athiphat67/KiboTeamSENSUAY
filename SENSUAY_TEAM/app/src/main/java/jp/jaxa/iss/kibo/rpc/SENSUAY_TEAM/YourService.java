@@ -222,6 +222,7 @@ public class YourService extends KiboRpcService {
 
     private DataPaper CapturePaper(int paper, Quaternion quaternionNow) {
 
+        
         int Inputpaper = paper;
         Mat warpedFlipped;
         int arucoid;
