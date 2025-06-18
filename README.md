@@ -11,7 +11,7 @@
 ## 🚀 Kibo-RPC 6th Mission Overview
 **Mission Brief: The Space Treasure Hunt**
 
-For Kibo-RPC #6, competitors will be given an exciting simulated mission: "Space pirates have hidden treasure in the Kibo module, and the astronauts have clues but don't know the exact location." Participating teams will need to write programs to control the Astrobee free-flying robot, a robot actually used on the ISS, to complete the following tasks:
+    For Kibo-RPC #6, competitors will be given an exciting simulated mission: "Space pirates have hidden treasure in the Kibo module, and the astronauts have clues but don't know the exact location." Participating teams will need to write programs to control the Astrobee free-flying robot, a robot actually used on the ISS, to complete the following tasks:
 
 - **Explore the Area:** Astrobee must move to designated observation points throughout the Kibo module, where fake treasures may be scattered.
 - **Collect Data and Report:** Record data and report findings at each explored point.
