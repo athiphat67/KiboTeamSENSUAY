@@ -27,11 +27,12 @@ Project overview:
     Third part is machine learning model creation. In this part we do datasets preparing and machine learning model training. 
     we train our model to be able to detect items correctly(we use yolov8n). 
     the last part is reporting route planning. this part we search for method that will make reportation correct according to the rules.
+    
 First part:
 
 Second part:
 
 Third part: phase of our machine learning project involved data annotation and dataset creation. I utilized LabelImg, a graphical image annotation tool, to meticulously label 2500 individual images. This process was crucial for "telling" the machine learning model exactly what each item of interest was within the images,              enabling it to learn and identify these objects accurately during training. These 2500 annotated images form the core of our training dataset.
 
-Fourth part:
+Fourth part: In this pahse we adapt tvec values which we get from Opencv to be correspond with axis in the simulation. After the tvec is correspond with simulation's axis, we use vector translation to get the reporting point in 3d space then move astrobee to be within that point. Eventually the part of reporting is finishes
     
