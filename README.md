@@ -37,8 +37,11 @@ the last part is reporting route planning. this part we search for method that w
 
 ### Second part: Image Processing
 
-### Third part: Machine Learning Object Detection Pipeline
-phase of our machine learning project involved data annotation and dataset creation. We utilized LabelImg, a graphical image annotation tool, to meticulously label 2500 individual images. This process was crucial for "telling" the machine learning model exactly what each item of interest was within the images,              enabling it to learn and identify these objects accurately during training. These 2500 annotated images form the core of our training dataset.
+### 🤖 Third Part: Machine Learning Object Detection Pipeline
+
+We created a custom dataset of 2,500 annotated images using **LabelImg**, which allowed us to define the objects for training. While our initial goal was to train directly with **TensorFlow Lite**, we faced technical limitations during the training process.
+
+As a solution, we switched to using **YOLOv8n**, a lightweight and efficient model. After training, we successfully **converted the model to TensorFlow Lite (.tflite)** format for deployment on our Android application.
 
 ### Fourth part:
 In this pahse we adapt tvec values which we get from Opencv to be correspond with axis in the simulation. After the tvec is correspond with simulation's axis, we use vector translation to get the reporting point in 3d space then move astrobee to be within that point. Eventually the part of reporting is finishes
