@@ -30,7 +30,7 @@ the last part is reporting route planning. this part we search for method that w
 
 ### First part:
 
-### Second part:
+### Second part: Image Processing
 
 ### Third part: 
 phase of our machine learning project involved data annotation and dataset creation. I utilized LabelImg, a graphical image annotation tool, to meticulously label 2500 individual images. This process was crucial for "telling" the machine learning model exactly what each item of interest was within the images,              enabling it to learn and identify these objects accurately during training. These 2500 annotated images form the core of our training dataset.
