@@ -37,6 +37,9 @@ the last part is reporting route planning. this part we search for method that w
 
 ### Second part: Image Processing
 
+<img width="640" alt="Untitled-1" src="https://github.com/user-attachments/assets/dd9fd8e8-77c8-4ffd-a934-4ee351cd2104" />
+
+
 ### Third Part: Machine Learning Object Detection Pipeline
 
 We created a custom dataset of 2,500 annotated images using **LabelImg**, which allowed us to define the objects for training. While our initial goal was to train directly with **TensorFlow Lite**, we faced technical limitations during the training process.
