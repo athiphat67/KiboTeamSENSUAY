@@ -103,14 +103,14 @@ public class YourService extends KiboRpcService {
 
         // Add จุดใหม่ไปที่ enum ของชื่อจุดที่สร้างไว้
         // Position (x,y,x)
-        targetPositions.put(MissionTarget.PLAN2_CAP_A1, new Point(11.15, -9.5, 4.9645));
+        targetPositions.put(MissionTarget.PLAN2_CAP_A1, new Point(11.15, -9.3, 4.9645));
         targetPositions.put(MissionTarget.PLAN2_CAP_A23, new Point(11.15, -8.45, 4.9645));
         targetPositions.put(MissionTarget.PLAN2_CAP_A4, new Point(11.143, -6.8525, 4.9645));
         targetPositions.put(MissionTarget.PLAN2_ASTRO_POS, new Point(11.143, -6.8525, 4.9645));
 
         // Add องศารอบแกนหมุนไปที่ชื่อจุด
         // Quaternion (pitch,roll,yaw)
-        targetOrientations.put(MissionTarget.PLAN2_CAP_A1, eulerToQuaternion(-15, 0, -80));
+        targetOrientations.put(MissionTarget.PLAN2_CAP_A1, eulerToQuaternion(0, 0, -90));
         targetOrientations.put(MissionTarget.PLAN2_CAP_A23, eulerToQuaternion(90, 0, 0));
         targetOrientations.put(MissionTarget.PLAN2_CAP_A4, eulerToQuaternion(-5, 0, 180));
         targetOrientations.put(MissionTarget.PLAN2_ASTRO_POS, eulerToQuaternion(0, 0, 90));
@@ -119,13 +119,14 @@ public class YourService extends KiboRpcService {
         try {
             Log.i("Mission", "Moving to Area 1 Capture Position...");
             moveToArea(targetPositions.get(MissionTarget.PLAN2_CAP_A1), targetOrientations.get(MissionTarget.PLAN2_CAP_A1));
+
+            SystemClock.sleep(2000);
+
             DataPaper result1 = CapturePaper(1, targetOrientations.get(MissionTarget.PLAN2_CAP_A1));
 
             Mat imgResult = result1.getCaptureImage();
             api.saveMatImage(imgResult, "imgArea_" + 1 + ".png");
             ListDataPaper.add(result1);
-
-            SystemClock.sleep(2000);
 
             ObjectDetector detector = new ObjectDetector(this);
             resultList.add(detector.processImage(result1));
