@@ -25,7 +25,7 @@ public class ObjectDetector {
 
     private static final String TAG = "ObjectDetector";
     private static final int INPUT_SIZE = 640;
-    private static final float CONFIDENCE_THRESHOLD = 0.5f;
+    private static final float CONFIDENCE_THRESHOLD = 0.4f;
     private static final float IOU_THRESHOLD = 0.45f;
 
     // Model output is [1, 15, 8400]
