@@ -71,6 +71,5 @@ In this pahse we adapt tvec values which we get from Opencv to be correspond wit
 
 ### 💻 Built With
 
-- ![Java](https://img.shields.io/badge/Java-red?style=for-the-badge&logo=java&logoColor=white)
-- ![Python](https://img.shields.io/badge/Python-blue?style=for-the-badge&logo=python&logoColor=white)
-- ![Android Studio](https://img.shields.io/badge/Android_Studio-green?style=for-the-badge&logo=android&logoColor=white)
+[![My Skills](https://skillicons.dev/icons?i=python,java,opencv,pytorch,gcp,vscode,androidstudio)](https://skillicons.dev)
+
