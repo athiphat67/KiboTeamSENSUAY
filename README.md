@@ -73,3 +73,9 @@ In this pahse we adapt tvec values which we get from Opencv to be correspond wit
 
 [![My Skills](https://skillicons.dev/icons?i=python,java,opencv,pytorch,gcp,vscode,androidstudio)](https://skillicons.dev)
 
+### Project Achievements
+
+The team finished in **6th place** at the national championship and was also honored with the **Outstanding Presentation Award.**
+
+You can watch the team's presentation here: https://youtu.be/eM1WNkI2N3I?si=WAIvNPSLinbOUZFI
+
